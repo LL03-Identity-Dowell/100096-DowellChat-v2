@@ -36,12 +36,12 @@ def background_thread():
         count += 1
         sio.emit('my_response', {'data': 'Server generated event'},
                  namespace='/test')
-        
+
 @sio.event
 def join(sid, message):
     room = message['room']
-        
-    
+
+
     sio.enter_room(sid, room)
     messages = Message.objects.filter(room_id=message['room']).all()
 
@@ -64,7 +64,7 @@ def close_room(sid, message):
              {'data': 'Room ' + message['room'] + ' is closing.'},
              room=message['room'])
     sio.close_room(message['room'])
-    
+
 # @sio.event
 def message_event(sid, message):
     type = message['type']
@@ -73,7 +73,7 @@ def message_event(sid, message):
     side = message['side']
     author = message['author']
     message_type = message['message_type']
-    
+
     data = {
         "type": type,
         "room_id": room_id,
@@ -84,7 +84,7 @@ def message_event(sid, message):
     }
     serializer = MessageSerializer(data=data)
     if serializer.is_valid():
-       
+
         Message.objects.create(
             type = type,
             room_id = room_id,
@@ -97,23 +97,25 @@ def message_event(sid, message):
     else:
         return sio.emit('my_response', {'data': 'Invalid Data', 'sid':sid}, room=message['room'])
 
-    
-# #   skip_sid=sid,      
+
+# #   skip_sid=sid,
 @sio.event
 def disconnect_request(sid):
     sio.disconnect(sid)
 
 
 # message=["Hello Everyone", "This is the second message"]
-    
+
 
 @sio.event
 def connect(sid, environ, query_para):
     sio.emit('my_response', {'data': "Welcome to Dowell Chat", 'count': 0}, room=sid)
+    sio.emit('me', sid)
 
 
 @sio.event
 def disconnect(sid):
+    sio.emit('callEnded', broadcast=True, skip_sid=sid)
     print('Client disconnected')
 
 
@@ -205,3 +207,14 @@ def audio_ice_candidate(sid, message):
 
 
 """New Video Call Feature"""
+@sio.event
+def callUser(sid, data):
+    sio.emit('callUser', {
+        'signal': data['signalData'],
+        'from': data['from'],
+        'name': data['name']
+    }, room=data['userToCall'])
+
+@sio.event
+def answerCall(sid, data):
+    sio.emit('callAccepted', data['signal'], room=data['to'])
