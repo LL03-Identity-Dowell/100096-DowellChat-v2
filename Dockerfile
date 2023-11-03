@@ -11,7 +11,7 @@ COPY requirements.txt /myproject/
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install eventlet for gunicorn
-RUN pip install eventlet
+RUN pip install eventlet==0.30.2
 
 # Copy the rest of the Django app code to the container
 COPY . /myproject/
