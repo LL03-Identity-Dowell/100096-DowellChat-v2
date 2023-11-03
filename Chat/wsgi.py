@@ -18,15 +18,16 @@ import os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Chat.settings')
 import socketio
 from django.core.wsgi import get_wsgi_application
+
+# Get the Django WSGI application
 django_app = get_wsgi_application()
-from api.views import sio
 
-# Using eventlet to run the server
-import eventlet
+# Setup socketio server
+sio = socketio.Server(cors_allowed_origins="*")
+application = socketio.WSGIApp(sio, django_app)
 
-def start_server():
-    application = socketio.WSGIApp(sio, django_app)
-    return application
+if __name__ == "__main__":
+    import eventlet
 
-if __name__ == '__main__':
-    eventlet.wsgi.server(eventlet.listen(('', 8000)), start_server)
+    # Start the server using eventlet
+    eventlet.wsgi.server(eventlet.listen(('', 8000)), application)
