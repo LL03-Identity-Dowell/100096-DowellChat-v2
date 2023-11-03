@@ -1,4 +1,5 @@
-async_mode = None
+import eventlet
+async_mode = 'eventlet'
 
 from .models import Room, Message
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
@@ -23,7 +24,7 @@ def index(request):
     global thread
     if thread is None:
         thread = sio.start_background_task(background_thread)
-    return HttpResponse("This URL is for WebSocket connections")
+    return HttpResponse("Connected to Dowell Chat Backend")
     # return HttpResponse(open(os.path.join(basedir, 'static/index.html')))
     # if request.method == 'GET':
     #     return HttpResponse("This URL is for WebSocket connections")

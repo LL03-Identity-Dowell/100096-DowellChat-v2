@@ -10,11 +10,14 @@ COPY requirements.txt /myproject/
 # Install the required dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install eventlet for gunicorn
+RUN pip install eventlet
+
 # Copy the rest of the Django app code to the container
 COPY . /myproject/
 
 # Expose the port on which the Django app will run
 EXPOSE 8000
 
-# Define the command to run the Django app
-CMD ["gunicorn", "Chat.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Define the command to run the Django app with gunicorn using eventlet
+CMD ["gunicorn", "-k", "eventlet", "-w", "1", "Chat.wsgi:application"]
