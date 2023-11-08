@@ -10,14 +10,14 @@ COPY requirements.txt /myproject/
 # Install the required dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install eventlet for gunicorn
-RUN pip install eventlet==0.30.2
-
 # Copy the rest of the Django app code to the container
 COPY . /myproject/
+
+RUN python manage.py makemigrations
+RUN python manage.py migrate
 
 # Expose the port on which the Django app will run
 EXPOSE 8000
 
-# Define the command to run the Django app with gunicorn using eventlet
-CMD ["gunicorn", "-k", "eventlet", "-w", "1", "Chat.wsgi:application"]
+# Update the CMD to run uWSGI for your application
+CMD ["uwsgi", "--http", ":8000", "--module", "Chat.wsgi:application", "--gevent", "1000", "--http-websockets"]
