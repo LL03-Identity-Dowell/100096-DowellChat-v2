@@ -20,4 +20,4 @@ RUN python manage.py migrate
 EXPOSE 8000
 
 # Update the CMD to run uWSGI for your application
-CMD ["uwsgi", "--http", ":8000", "--module", "Chat.wsgi:application", "--gevent", "1000", "--http-websockets"]
+CMD ["gunicorn", "-w", "1", "--threads", "100", "--bind", "0.0.0.0:8000", "Chat.wsgi:application"]

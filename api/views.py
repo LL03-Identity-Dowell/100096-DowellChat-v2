@@ -1,5 +1,5 @@
 import eventlet
-async_mode = 'gevent_uwsgi'
+async_mode = 'threading'
 
 from .models import Room, Message
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
