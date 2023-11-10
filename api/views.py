@@ -5,6 +5,7 @@ from .models import Room, Message
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
+from django.views import View
 
 from .serializers import MessageSerializer
 
@@ -220,3 +221,9 @@ def callUser(sid, data):
 @sio.event
 def answerCall(sid, data):
     sio.emit('callAccepted', data['signal'], room=data['to'])
+
+
+class SSLVerificationView(View):
+    def get(self, request, *args, **kwargs):
+        txt_content = "D873E6BC2B961D3D6CD212A292FE485BCDF8D3EFBF45E4A8A84B0B84ACEF3A8E\ncomodoca.com\n69b1fa11cd1fdaa"
+        return HttpResponse(txt_content, content_type="text/plain")
