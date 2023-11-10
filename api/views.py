@@ -1,5 +1,5 @@
 
-async_mode = None
+async_mode = 'gevent'
 
 from .models import Room, Message
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST

@@ -15,9 +15,10 @@ COPY . /myproject/
 
 RUN python manage.py makemigrations
 RUN python manage.py migrate
+# Install dependencie
 
 # Expose the port on which the Django app will run
 EXPOSE 8000
 
 # Update the CMD to run uWSGI for your application
-CMD ["gunicorn", "-w", "1", "--threads", "100", "--bind", "0.0.0.0:8000", "Chat.wsgi:application"]
+CMD ["gunicorn", "-k", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", "-w", "1", "Chat.wsgi:application", "--timeout", "1060"]
