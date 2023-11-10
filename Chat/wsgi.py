@@ -34,12 +34,13 @@
 
 import os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Chat.settings')
-from django.core.wsgi import get_wsgi_application
 import socketio
+
+from django.core.wsgi import get_wsgi_application
 
 # Get the Django WSGI application
 django_app = get_wsgi_application()
 
-# Setup socketio server
-sio = socketio.Server(cors_allowed_origins="*")
+from api.views import sio
+
 application = socketio.WSGIApp(sio, django_app)
