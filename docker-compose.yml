@@ -32,10 +32,12 @@ services:
 
   certbot:
     image: certbot/certbot
+    depends_on:
+      - nginx
     volumes:
+      - /home/dowell/100096-DowellChat-v2/nginx:/etc/nginx
       - ./certbot-webroot:/var/www/html  # Temporary webroot for Certbot
-    command: certonly --webroot -w /var/www/html -d dowellchat.uxlivinglab.online -d www.dowellchat.uxlivinglab.online
-
+    command: certonly --webroot -w /var/www/html -d www.dowellchat.uxlivinglab.online --email chidiebereorjiibiam7@gmail.com --agree-tos --no-eff-email --non-interactive
 
 networks:
   webnet:
