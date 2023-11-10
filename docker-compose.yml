@@ -24,10 +24,18 @@ services:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ./static:/static
       - ./media:/media
+      - ./certbot-webroot:/var/www/html
     ports:
       - "80:80"
     networks:
       - webnet
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certbot-webroot:/var/www/html  # Temporary webroot for Certbot
+    command: certonly --webroot -w /var/www/html -d dowellchat.uxlivinglab.online -d www.dowellchat.uxlivinglab.online
+
 
 networks:
   webnet:

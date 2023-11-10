@@ -112,7 +112,7 @@ def disconnect_request(sid):
 @sio.event
 def connect(sid, environ, query_para):
     sio.emit('my_response', {'data': "Welcome to Dowell Chat", 'count': 0}, room=sid)
-    sio.emit('me', sid)
+    sio.emit('me', sid, room=sid)
 
 
 @sio.event
