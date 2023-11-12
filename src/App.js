@@ -127,6 +127,7 @@ function App() {
           id="video-1"
           autoPlay
           playsInline
+          muted
         ></video>
         <video
           ref={remoteStreamRef}
