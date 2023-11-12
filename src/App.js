@@ -22,7 +22,7 @@ function App() {
 
   useEffect(() => {
     navigator.mediaDevices
-      .getUserMedia({ video: true, audio: false })
+      .getUserMedia({ video: true, audio: true })
       .then((stream) => {
         setLocalStream(stream);
         localStreamRef.current.srcObject = stream;
