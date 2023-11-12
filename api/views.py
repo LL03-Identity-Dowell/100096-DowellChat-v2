@@ -220,3 +220,7 @@ def callUser(sid, data):
 @sio.event
 def answerCall(sid, data):
     sio.emit('callAccepted', data['signal'], room=data['to'])
+
+@sio.event
+def endCall(sid):
+    sio.emit('callEnded')
