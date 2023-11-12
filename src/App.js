@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Peer from "simple-peer";
 import io from "socket.io-client";
 
-const socket = io.connect("http://www.dowellchat.uxlivinglab.online/");
+let socket = io.connect("https://www.dowellchat.uxlivinglab.online/");
 
 function App() {
   const [localStream, setLocalStream] = useState();
@@ -28,23 +28,25 @@ function App() {
         localStreamRef.current.srcObject = stream;
         // createOffer();
       });
-
-    socket.on("me", (id) => {
-      console.log("myID", id);
-      !myId && setMyId(id);
-    });
-    socket.on("callUser", (data) => {
-      console.log("recieving call", data);
-      setIsCallOngoing(true);
-      setIsCallAccepted(false);
-      setIsRecievingCall(true);
-      setCaller(data.from);
-      setCallerName(data.name);
-      setCallerSignal(data.signal);
-    });
   }, [myId]);
+  socket.on("me", (id) => {
+    setMyId(id);
+  });
+  socket.on("callUser", (data) => {
+    setIsCallOngoing(true);
+    setIsCallAccepted(false);
+    setIsRecievingCall(true);
+    setCaller(data.from);
+    setCallerName(data.name);
+    setCallerSignal(data.signal);
+  });
 
   const callUser = (id) => {
+    if (connectionRef.current && !connectionRef.current.destroyed) {
+      connectionRef.current.destroy();
+      connectionRef.current = null;
+    }
+
     const peer = new Peer({
       initiator: true,
       trickle: false,
@@ -67,8 +69,7 @@ function App() {
     socket.on("callAccepted", (signal) => {
       setIsCallAccepted(true);
       setIsRecievingCall(false);
-      console.log("callAccepted");
-      peer.signal(signal);
+      connectionRef.current.signal(signal);
     });
 
     setIsCallOngoing(true);
@@ -96,25 +97,25 @@ function App() {
     setIsRecievingCall(false);
 
     connectionRef.current = peer;
-    console.log("answered");
   };
 
   socket.on("callEnded", () => {
     setIsCallOngoing(false);
     setIsRecievingCall(false);
     setIsCallAccepted(false);
-    // connectionRef.current = null;
+    if (connectionRef.current) {
+      connectionRef.current?.destroy();
+      connectionRef.current = null;
+    }
   });
 
   const leaveCall = () => {
-    // socket.emit("disconnect");
-    // socket.disconnect()
-    // console.log(connectionRef.current);
-    // connectionRef.current.destroyed();
-    connectionRef.current.destroy();
-    // connectionRef.current.destroy(() => {
-    //   console.log("call canceled");
-    // });
+    socket.emit("endCall");
+    connectionRef.current?.destroy();
+    connectionRef.current = null;
+    setIsCallOngoing(false);
+    setIsRecievingCall(false);
+    setIsCallAccepted(false);
   };
 
   return (
