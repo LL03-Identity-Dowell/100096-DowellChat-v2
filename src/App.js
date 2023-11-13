@@ -52,7 +52,14 @@ function App() {
       trickle: false,
       stream: localStream,
       config: {
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          {
+            urls: "turn:turn.1.google.com:19305",
+            username: "webrtc",
+            credential: "webtrc",
+          },
+        ],
       },
     });
 
@@ -85,7 +92,14 @@ function App() {
       trickle: false,
       stream: localStream,
       config: {
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        iceServers: [
+          { urls: "stun:stun.l.google.com:19302" },
+          {
+            urls: "turn:turn.1.google.com:19305",
+            username: "webrtc",
+            credential: "webtrc",
+          },
+        ],
       },
     });
 
@@ -101,6 +115,8 @@ function App() {
 
     setIsCallAccepted(true);
     setIsRecievingCall(false);
+
+    console.log("answered");
 
     connectionRef.current = peer;
   };
