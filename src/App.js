@@ -51,6 +51,9 @@ function App() {
       initiator: true,
       trickle: false,
       stream: localStream,
+      config: {
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      },
     });
 
     peer.on("signal", (data) => {
@@ -81,6 +84,9 @@ function App() {
       initiator: false,
       trickle: false,
       stream: localStream,
+      config: {
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      },
     });
 
     peer.on("signal", (data) => {
