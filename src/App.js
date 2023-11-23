@@ -55,9 +55,9 @@ function App() {
         iceServers: [
           { urls: "stun:stun.l.google.com:19302" },
           {
-            urls: "turn:turn.1.google.com:19305",
-            username: "webrtc",
-            credential: "webtrc",
+            urls: "turn:216.158.239.24:3478",
+            username: "dowell",
+            credential: "server177368",
           },
         ],
       },
@@ -73,6 +73,7 @@ function App() {
     });
 
     peer.on("stream", (stream) => {
+      console.log("calling stream", stream);
       remoteStreamRef.current.srcObject = stream;
     });
 
@@ -95,9 +96,9 @@ function App() {
         iceServers: [
           { urls: "stun:stun.l.google.com:19302" },
           {
-            urls: "turn:turn.1.google.com:19305",
-            username: "webrtc",
-            credential: "webtrc",
+            urls: "turn:216.158.239.24:3478",
+            username: "dowell",
+            credential: "server177368",
           },
         ],
       },
@@ -108,6 +109,7 @@ function App() {
     });
 
     peer.on("stream", (stream) => {
+      console.log("answer stream", stream);
       remoteStreamRef.current.srcObject = stream;
     });
 
