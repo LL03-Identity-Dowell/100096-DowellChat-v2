@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Peer from "simple-peer";
 import io from "socket.io-client";
 import { Call } from "../../components/call/Call";
@@ -23,6 +23,12 @@ export const VideoChat = () => {
   const localStreamRef = useRef(null);
   const remoteStreamRef = useRef(null);
   const connectionRef = useRef(null);
+
+  useEffect(() => {
+    if (!myId) {
+      socket = io.connect("https://www.dowellchat.uxlivinglab.online/");
+    }
+  }, [myId]);
 
   const getMediaStream = async () => {
     try {
@@ -150,7 +156,7 @@ export const VideoChat = () => {
     window.location.reload();
   };
   return (
-    <div className="flex w-full h-screen justify-center items-center">
+    <div className="flex w-full min-h-screen bg-gray-300 justify-center items-center">
       {!isCalling && !isRecievingCall && !isCallAccepted && (
         <Call
           title="Dowell Video Chat"

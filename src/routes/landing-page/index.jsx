@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 export const LandingPage = () => {
   return (
-    <div className="flex gap-x-5 justify-center items-center">
+    <div className="flex w-full min-h-screen bg-gray-300 gap-x-5 justify-center items-center">
       <Link
         to="voice-chat"
         className="flex flex-col gap-y-8 justify-center items-center w-60 h-52 bg-white rounded-lg shadow-sm hover:shadow-xl hover:bg-green-50 cursor-pointer"

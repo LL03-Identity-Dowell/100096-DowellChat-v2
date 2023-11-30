@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 
 import Peer from "simple-peer";
 
@@ -10,7 +10,6 @@ import { IncomingCall } from "../../components/incoming-call/IncomingCall";
 import { AcceptedCall } from "../../components/accepted-call/AcceptedCall";
 
 let socket = io.connect("https://www.dowellchat.uxlivinglab.online/");
-
 export const VoiceChat = () => {
   const [myId, setMyId] = useState("");
   const [localStream, setLocalStream] = useState(null);
@@ -25,8 +24,15 @@ export const VoiceChat = () => {
   const remoteAudioRef = useRef(null);
   const connectionRef = useRef(null);
 
+  useEffect(() => {
+    if (!myId) {
+      socket = io.connect("https://www.dowellchat.uxlivinglab.online/");
+    }
+  }, [myId]);
+
   socket.on("me", async (id) => {
     await getMediaStream();
+    console.log("helo");
     setMyId(id);
   });
   socket.on("callUser", (data) => {
@@ -149,7 +155,7 @@ export const VoiceChat = () => {
   };
 
   return (
-    <div className="flex w-full h-screen justify-center items-center">
+    <div className="flex w-full min-h-screen bg-gray-300 justify-center items-center">
       <audio ref={remoteAudioRef} autoPlay />
       {!isCalling && !isRecievingCall && !isCallAccepted && (
         <Call
