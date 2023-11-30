@@ -25,7 +25,9 @@ export const VideoChat = () => {
   const connectionRef = useRef(null);
 
   useEffect(() => {
-    socket = io.connect("https://www.dowellchat.uxlivinglab.online/");
+    if (!myId) {
+      socket = io.connect("https://www.dowellchat.uxlivinglab.online/");
+    }
   }, [myId]);
 
   const getMediaStream = async () => {
