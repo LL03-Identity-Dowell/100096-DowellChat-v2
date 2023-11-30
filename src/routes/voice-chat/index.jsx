@@ -25,14 +25,11 @@ export const VoiceChat = () => {
   const connectionRef = useRef(null);
 
   useEffect(() => {
-    if (!myId) {
-      socket = io.connect("https://www.dowellchat.uxlivinglab.online/");
-    }
+    socket = io.connect("https://www.dowellchat.uxlivinglab.online/");
   }, [myId]);
 
   socket.on("me", async (id) => {
     await getMediaStream();
-    console.log("helo");
     setMyId(id);
   });
   socket.on("callUser", (data) => {
