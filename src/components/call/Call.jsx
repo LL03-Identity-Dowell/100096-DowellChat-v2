@@ -1,8 +1,13 @@
-export const Call = ({ myId, setIdToCall, onClick }) => {
+export const Call = ({
+  title = "Dowell Voice Chat",
+  myId,
+  setIdToCall,
+  onClick,
+}) => {
   return (
     <div className="flex flex-col w-1/2 px-3 py-5 items-center shadow-lg rounded-lg border border-gray-300 bg-white">
       <h2 className="mb-7 text-2xl font-bold">
-        Welcome to <span className="text-green-600">Dowell Voice Chat</span>
+        Welcome to <span className="text-green-600">{title}</span>
       </h2>
       <span className="mb-6">Your ID: {myId}</span>
       <div className="flex w-3/5 flex-col mb-8">
