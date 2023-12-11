@@ -13,7 +13,7 @@ Note: To begin, ensure that you have obtained an API key from:
 ### 1. Establishing Connection
 When a client connects to the server, an event is triggered, and a welcome message is emitted to the connected client.
 ```javascript
-var livinglab = io('https://www.dowellchat.uxlivinglab.online/', { query: `api_key=${'your-api-key'}` });
+var livinglab = io('https://www.dowellchat.uxlivinglab.online/public/', { query: `api_key=${'your-api-key'}` });
 ```
 ### 2. Handling Connection Errors
 In case of a connection error, this event will be triggered, allowing you to handle the error appropriately, such as displaying an alert or logging it.
