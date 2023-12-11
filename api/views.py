@@ -5,11 +5,6 @@ from .models import Room, Message
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
-<<<<<<< HEAD
-from django.views import View
-
-=======
->>>>>>> 13614be5b6f27a65e9ab62c5b5ccb119ad003653
 from .serializers import MessageSerializer
 from .utils import processApiService, DataCubeConnection
 #Socket imports
@@ -126,13 +121,6 @@ def callUser(sid, data):
 def answerCall(sid, data):
     sio.emit('callAccepted', data['signal'], room=data['to'])
 
-<<<<<<< HEAD
-
-class SSLVerificationView(View):
-    def get(self, request, *args, **kwargs):
-        txt_content = "D873E6BC2B961D3D6CD212A292FE485BCDF8D3EFBF45E4A8A84B0B84ACEF3A8E\ncomodoca.com\n69b1fa11cd1fdaa"
-        return HttpResponse(txt_content, content_type="text/plain")
-=======
 @sio.event
 def endCall(sid):
     sio.emit('callEnded')
@@ -246,4 +234,3 @@ class PublicNamespace(socketio.Namespace):
         sio.emit('callEnded')
 
 sio.register_namespace(PublicNamespace('/public'))
->>>>>>> 13614be5b6f27a65e9ab62c5b5ccb119ad003653

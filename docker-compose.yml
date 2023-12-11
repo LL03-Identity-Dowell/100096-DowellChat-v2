@@ -32,9 +32,6 @@ services:
     networks:
       - webnet
 
-<<<<<<< HEAD
   
-=======
->>>>>>> 13614be5b6f27a65e9ab62c5b5ccb119ad003653
 networks:
   webnet:
