@@ -69,11 +69,23 @@ class DataCubeConnection:
 
 
 """DATACUBE USAGE"""
-api_key = os.getenv("API_KEY")
+# api_key = os.getenv("API_KEY")
 
-if api_key is None:
-    raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
-data_cube = DataCubeConnection(api_key)
+# if api_key is None:
+#     raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
+# data_cube = DataCubeConnection(api_key)
 
-response = data_cube.fetch_data(db_name="dowellchat", coll_name="rooms", filters={"id": "101001010101"}, limit=1, offset=0)
-print(response)
+# response = data_cube.fetch_data(db_name="dowellchat", coll_name="rooms", filters={"id": "101001010101"}, limit=1, offset=0)
+# print(response)
+
+def processApiService(api_key):
+    """The purpose of this request is to process the API key 
+    and determine if it is valid for the specified API service."""
+    url = f'https://100105.pythonanywhere.com/api/v3/process-services/?type=api_service&api_key={api_key}'
+    
+    payload = {
+        "service_id" : "DOWELL10039"
+    }
+    response = requests.post(url, json=payload)
+
+    return json.loads(response.text)

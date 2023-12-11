@@ -13,3 +13,4 @@ gevent==21.8.0  # Required for the gevent integration with uWSGI
 #uwsgi==2.0.20  # Required for running the application with uWSGI
 gevent-websocket
 python-dotenv
+requests

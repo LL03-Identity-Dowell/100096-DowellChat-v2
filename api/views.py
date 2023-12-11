@@ -1,19 +1,16 @@
-
+import time
 async_mode = 'gevent'
-
+# async_mode = "threading"
 from .models import Room, Message
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
-
 from .serializers import MessageSerializer
-
+from .utils import processApiService, DataCubeConnection
 #Socket imports
 import os
 from django.http import HttpResponse
 import socketio
-
-# # basedir = os.path.dirname(os.path.realpath(__file__))
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
 app = socketio.WSGIApp(sio)
 thread = None
@@ -25,11 +22,7 @@ def index(request):
     if thread is None:
         thread = sio.start_background_task(background_thread)
     return HttpResponse("Connected to Dowell Chat Backend")
-    # return HttpResponse(open(os.path.join(basedir, 'static/index.html')))
-    # if request.method == 'GET':
-    #     return HttpResponse("This URL is for WebSocket connections")
-    # else:
-    #     return app.handle_request(request)
+
 
 def background_thread():
     count = 0
@@ -42,13 +35,9 @@ def background_thread():
 @sio.event
 def join(sid, message):
     room = message['room']
-
-
     sio.enter_room(sid, room)
     messages = Message.objects.filter(room_id=message['room']).all()
-
     sio.emit('my_response', {'data': f"{sid} Joined the Room",  'count': 0}, room=room, skip_sid=sid)
-
     if messages.count()==0:
         sio.emit('my_response', {'data': "Hey how may i help you",  'count': 0}, room=sid)
     else:
@@ -60,14 +49,15 @@ def leave(sid, message):
     sio.leave_room(sid, message['room'])
     sio.emit('my_response', {'data': 'Left room: ' + message['room']},
              room=message['room'])
-
+    
+@sio.event
 def close_room(sid, message):
     sio.emit('my_response',
              {'data': 'Room ' + message['room'] + ' is closing.'},
              room=message['room'])
     sio.close_room(message['room'])
 
-# @sio.event
+@sio.event
 def message_event(sid, message):
     type = message['type']
     room_id = message['room_id']
@@ -106,9 +96,6 @@ def disconnect_request(sid):
     sio.disconnect(sid)
 
 
-# message=["Hello Everyone", "This is the second message"]
-
-
 @sio.event
 def connect(sid, environ, query_para):
     sio.emit('my_response', {'data': "Welcome to Dowell Chat", 'count': 0}, room=sid)
@@ -137,3 +124,113 @@ def answerCall(sid, data):
 @sio.event
 def endCall(sid):
     sio.emit('callEnded')
+
+
+
+"""PUBLIC RELEASE"""
+public_namespace = '/public'
+@api_view(['GET'])
+@csrf_exempt
+def public(request):
+    return HttpResponse("Connected to Public Dowell Chat Backend")
+
+class PublicNamespace(socketio.Namespace):
+
+    def on_connect(self, sid, environ):
+        query_params = environ.get("QUERY_STRING")
+        query_dict = dict(qc.split("=") for qc in query_params.split("&"))
+
+        if 'api_key' in query_dict:
+            api_key = query_dict['api_key']
+            authentication_res = processApiService(str(api_key))
+
+            if authentication_res['success'] == False:
+                error_message= f'User {sid} connection denied due to api key {authentication_res["message"]}' 
+                print(authentication_res)
+                raise socketio.exceptions.ConnectionRefusedError(error_message)
+            else:
+                print(f'User {sid} connected with valid input data: {api_key}')
+                sio.emit('my_response', {'data': "Welcome to Public Dowell Chat", 'count': 0}, room=sid, namespace='/public')
+                sio.emit('me', sid, room=sid, namespace='/public')
+                
+        else:
+            error_message= f'User {sid} connection denied due to no Api Key was provided'        
+            raise socketio.exceptions.ConnectionRefusedError(error_message)
+    
+        
+
+    def on_disconnect(self, sid):
+        pass
+
+    def on_join(sid, message):
+        room = message['room']
+
+
+        sio.enter_room(sid, room)
+        messages = Message.objects.filter(room_id=message['room']).all()
+
+        sio.emit('my_response', {'data': f"{sid} Joined the Room",  'count': 0}, room=room, skip_sid=sid)
+
+        if messages.count()==0:
+            sio.emit('my_response', {'data': "Hey how may i help you",  'count': 0}, room=sid)
+        else:
+            for i in messages:
+                sio.emit('my_response', {'data': str(i.message_data),  'count': 0}, room=sid)
+
+    def on_leave(sid, message):
+        sio.leave_room(sid, message['room'])
+        sio.emit('my_response', {'data': 'Left room: ' + message['room']},
+                room=message['room'])
+
+    def on_close_room(sid, message):
+        sio.emit('my_response',
+                {'data': 'Room ' + message['room'] + ' is closing.'},
+                room=message['room'])
+        sio.close_room(message['room'])
+
+    
+    def on_message_event(sid, message):
+        type = message['type']
+        room_id = message['room_id']
+        message_data = message['message_data']
+        side = message['side']
+        author = message['author']
+        message_type = message['message_type']
+
+        data = {
+            "type": type,
+            "room_id": room_id,
+            "message_data": message_data,
+            "side": side,
+            "author": author,
+            "message_type": message_type,
+        }
+        serializer = MessageSerializer(data=data)
+        if serializer.is_valid():
+
+            Message.objects.create(
+                type = type,
+                room_id = room_id,
+                message_data = message_data,
+                side = side,
+                author = author,
+                message_type = message_type
+            )
+            return sio.emit('my_response', {'data': message['message_data'], 'sid':sid},  room=message['room_id'])
+        else:
+            return sio.emit('my_response', {'data': 'Invalid Data', 'sid':sid}, room=message['room'])
+
+    def on_callUser(sid, data):
+        sio.emit('callUser', {
+            'signal': data['signalData'],
+            'from': data['from'],
+            'name': data['name']
+        }, room=data['userToCall'])
+
+    def on_answerCall(sid, data):
+        sio.emit('callAccepted', data['signal'], room=data['to'])
+
+    def on_endCall(sid):
+        sio.emit('callEnded')
+
+sio.register_namespace(PublicNamespace('/public'))
