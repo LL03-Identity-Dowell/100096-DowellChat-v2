@@ -75,16 +75,7 @@ class DataCubeConnection:
 #     raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
 # data_cube = DataCubeConnection(api_key)
 
-# response = data_cube.insert_data(db_name="dowellchat", coll_name="server", 
-#                                  data={
-#                                      "name": "chidiebere",
-#                                      "member_list": [12284924893, 489848822, 1023892492],
-#                                      "channels": [184, 92482492490],
-#                                      "events": [282038489],
-#                                      "owner": 938948920,
-#                                      "created_at": "now", 
-
-#                                      })
+# response = data_cube.fetch_data(db_name="dowellchat", coll_name="serve", filters={"name": "test7"}, limit=1, offset=0)
 # print(response)
 
 def processApiService(api_key):

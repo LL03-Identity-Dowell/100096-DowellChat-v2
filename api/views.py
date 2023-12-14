@@ -17,6 +17,9 @@ app = socketio.WSGIApp(sio)
 thread = None
 
 api_key = os.getenv("API_KEY")
+if api_key is None:
+    raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
+data_cube = DataCubeConnection(api_key)
 
 @api_view(['GET'])
 @csrf_exempt
@@ -104,10 +107,6 @@ def create_server(sid, message):
     owner = message['owner']
     created_at = message['created_at']
 
-    if api_key is None:
-        raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
-    data_cube = DataCubeConnection(api_key)
-
     response = data_cube.insert_data(db_name="dowellchat", coll_name="server", 
                                  data={
                                      "name": name,
@@ -123,8 +122,28 @@ def create_server(sid, message):
     else:
         return sio.emit('create_server_response', {'data':"Error creating server", 'status': 'failure'}, room=sid)
     
+@sio.event
+def get_server(sid, message):
+    try:
+        server_name = message['server_name']
+        response = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"name": server_name}, limit=1, offset=0)
 
+        if response['success']:
+            if response['data']:
+                # Record found
+                server_data = response['data'][0]
+                return sio.emit('get_server_response', {'data': server_data, 'status': 'success'}, room=sid)
+            else:
+                # No record found
+                return sio.emit('get_server_response', {'data': 'No data found for this query', 'status': 'success'}, room=sid)
+        else:
+            # Error in fetching data
+            return sio.emit('get_server_response', {'data': response['message'], 'status': 'failure'}, room=sid)
 
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('get_server_response', {'data': error_message, 'status': 'failure'}, room=sid)
 
 
 
