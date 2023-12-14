@@ -1,6 +1,7 @@
 import time
-async_mode = 'gevent'
-# async_mode = "threading"
+import json
+# async_mode = 'gevent'
+async_mode = "threading"
 from .models import Room, Message
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from rest_framework.decorators import api_view
@@ -14,6 +15,8 @@ import socketio
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
 app = socketio.WSGIApp(sio)
 thread = None
+
+api_key = os.getenv("API_KEY")
 
 @api_view(['GET'])
 @csrf_exempt
@@ -90,7 +93,42 @@ def message_event(sid, message):
         return sio.emit('my_response', {'data': 'Invalid Data', 'sid':sid}, room=message['room'])
 
 
-# #   skip_sid=sid,
+"""SERVER EVENT SECTION"""
+
+@sio.event
+def create_server(sid, message):
+    name = message['name']
+    member_list = message['member_list']
+    channels = message['member_list']
+    events = message['member_list'] 
+    owner = message['owner']
+    created_at = message['created_at']
+
+    if api_key is None:
+        raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
+    data_cube = DataCubeConnection(api_key)
+
+    response = data_cube.insert_data(db_name="dowellchat", coll_name="server", 
+                                 data={
+                                     "name": name,
+                                     "member_list": member_list,
+                                     "channels": channels,
+                                     "events": events,
+                                     "owner": owner,
+                                     "created_at": created_at, 
+                                     })
+    
+    if response['success'] == True:
+        return sio.emit('create_server_response', {'data':"Server Created Successfully", 'status': 'success'}, room=sid)
+    else:
+        return sio.emit('create_server_response', {'data':"Error creating server", 'status': 'failure'}, room=sid)
+    
+
+
+
+
+
+
 @sio.event
 def disconnect_request(sid):
     sio.disconnect(sid)
