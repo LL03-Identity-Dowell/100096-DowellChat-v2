@@ -182,6 +182,24 @@ def update_server(sid, message):
         return sio.emit('server_response', {'data': error_message, 'status': 'failure', 'operation':'update_server'}, room=sid)
 
 
+@sio.event
+def delete_server(sid, message):
+    try:
+        server_name = message['server_name']
+        response = data_cube.delete_data(db_name="dowellchat", coll_name="server", query={"name": server_name})
+
+        if response['success']:
+            if response['message']:
+                return sio.emit('server_response', {'data': "Server Deleted Successfully", 'status': 'success', 'operation':'delete_server'}, room=sid)
+            else:
+                return sio.emit('server_response', {'data': 'No data found for this query', 'status': 'success', 'operation':'delete_server'}, room=sid)
+        else:
+            return sio.emit('server_response', {'data': response['message'], 'status': 'failure', 'operation':'delete_server'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('server_response', {'data': error_message, 'status': 'failure', 'operation':'delete_server'}, room=sid)
+
 
 @sio.event
 def disconnect_request(sid):
