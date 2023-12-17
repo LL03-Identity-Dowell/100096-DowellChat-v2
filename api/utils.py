@@ -21,7 +21,10 @@ class DataCubeConnection:
 
     def _make_request(self, operation, payload):
         url = self.GET_DATA_URL if operation == DBCrudOperation.FETCH else self.CRUD_URL
-        res = requests.post(url, json=payload)
+        if operation == DBCrudOperation.UPDATE:
+            res = requests.put(url, json=payload)
+        else:    
+            res = requests.post(url, json=payload)
         return json.loads(res.text)
 
     def fetch_data(self, db_name, coll_name, filters, limit, offset):
@@ -69,13 +72,37 @@ class DataCubeConnection:
 
 
 """DATACUBE USAGE"""
-# api_key = os.getenv("API_KEY")
+api_key = os.getenv("API_KEY")
 
 # if api_key is None:
 #     raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
 # data_cube = DataCubeConnection(api_key)
+# updated_data = {
+#                 "name": "test_updat",
+#                 "member_list": 'member_list',
+#                 "channels": 'channel',
+#                 "events": 'events',
+#                 "owner": 'owner',
+#                 "created_at": 'created_at', 
+#         }
 
-# response = data_cube.fetch_data(db_name="dowellchat", coll_name="serve", filters={"name": "test7"}, limit=1, offset=0)
+# response = data_cube.update_data(db_name="dowellchat", coll_name="server", query = {"name": 'test_update'}, update_data=updated_data)    
+# # response = data_cube.fetch_data(db_name="dowellchat", coll_name="serve", filters={"name": "test7"}, limit=1, offset=0)
+# print(response)
+
+
+# url = "https://datacube.uxlivinglab.online/db_api/crud/"
+
+# data = {
+#     "api_key": api_key,
+#     "db_name": "dowellchat",
+#     "coll_name": "server",
+#     "operation": "update",
+#     "query" : {"name": "test8"},
+#     "update_data":updated_data
+# }
+
+# response = requests.put(url, json=data)
 # print(response)
 
 def processApiService(api_key):

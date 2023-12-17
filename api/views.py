@@ -100,27 +100,34 @@ def message_event(sid, message):
 
 @sio.event
 def create_server(sid, message):
-    name = message['name']
-    member_list = message['member_list']
-    channels = message['member_list']
-    events = message['member_list'] 
-    owner = message['owner']
-    created_at = message['created_at']
+    try:
+        name = message['name']
+        member_list = message['member_list']
+        channels = message['channels']
+        events = message['events'] 
+        owner = message['owner']
+        created_at = message['created_at']
 
-    response = data_cube.insert_data(db_name="dowellchat", coll_name="server", 
-                                 data={
-                                     "name": name,
-                                     "member_list": member_list,
-                                     "channels": channels,
-                                     "events": events,
-                                     "owner": owner,
-                                     "created_at": created_at, 
-                                     })
+        data = {
+                "name": name,
+                "member_list": member_list,
+                "channels": channels,
+                "events": events,
+                "owner": owner,
+                "created_at": created_at, 
+        }
+        response = data_cube.insert_data(db_name="dowellchat", coll_name="server", data=data)
+        
+        if response['success'] == True:
+            return sio.emit('server_response', {'data':"Server Created Successfully", 'status': 'success', 'operation':'create_server'}, room=sid)
+        else:
+            return sio.emit('server_response', {'data':"Error creating server", 'status': 'failure', 'operation':'create_server'}, room=sid)
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('server_response', {'data': error_message, 'status': 'failure', 'operation':'create_server'}, room=sid)
+
     
-    if response['success'] == True:
-        return sio.emit('create_server_response', {'data':"Server Created Successfully", 'status': 'success'}, room=sid)
-    else:
-        return sio.emit('create_server_response', {'data':"Error creating server", 'status': 'failure'}, room=sid)
     
 @sio.event
 def get_server(sid, message):
@@ -132,19 +139,47 @@ def get_server(sid, message):
             if response['data']:
                 # Record found
                 server_data = response['data'][0]
-                return sio.emit('get_server_response', {'data': server_data, 'status': 'success'}, room=sid)
+                return sio.emit('server_response', {'data': server_data, 'status': 'success', 'operation':'get_server'}, room=sid)
             else:
                 # No record found
-                return sio.emit('get_server_response', {'data': 'No data found for this query', 'status': 'success'}, room=sid)
+                return sio.emit('server_response', {'data': 'No data found for this query', 'status': 'success', 'operation':'get_server'}, room=sid)
         else:
             # Error in fetching data
-            return sio.emit('get_server_response', {'data': response['message'], 'status': 'failure'}, room=sid)
+            return sio.emit('server_response', {'data': response['message'], 'status': 'failure', 'operation':'get_server'}, room=sid)
 
     except Exception as e:
         # Handle other exceptions
         error_message = str(e)
-        return sio.emit('get_server_response', {'data': error_message, 'status': 'failure'}, room=sid)
+        return sio.emit('server_response', {'data': error_message, 'status': 'failure', 'operation':'get_server'}, room=sid)
+    
 
+@sio.event
+def update_server(sid, message):
+    try:
+        server_name = message['name']
+        member_list = message['member_list']
+        channels = message['channels']
+        events = message['events'] 
+        owner = message['owner']
+        created_at = message['created_at']
+
+        update_data = {
+                "name": server_name,
+                "member_list": member_list,
+                "channels": channels,
+                "events": events,
+                "owner": owner,
+                "created_at": created_at, 
+        }
+
+        response = data_cube.update_data(db_name="dowellchat", coll_name="server", query = {"name": server_name}, update_data=update_data)    
+        if response['success'] == True:
+            return sio.emit('server_response', {'data':"Server Updated Successfully", 'status': 'success', 'operation':'update_server'}, room=sid)
+        else:
+            return sio.emit('server_response', {'data':"Error updating server", 'status': 'failure', 'operation':'update_server'}, room=sid)
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('server_response', {'data': error_message, 'status': 'failure', 'operation':'update_server'}, room=sid)
 
 
 
