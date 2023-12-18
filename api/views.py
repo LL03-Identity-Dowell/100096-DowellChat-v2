@@ -229,8 +229,14 @@ def create_channel(sid, message):
         response = data_cube.insert_data(db_name="dowellchat", coll_name="channel", data=data)
         
         if response['success'] == True:
+            channels = data_cube.fetch_data(db_name="dowellchat", coll_name="channel", filters={"server": server}, limit=199, offset=0)
+            channel_list=[]
+            for channel in channels['data']:
+                channel_list.append(channel['name'])
+            sio.emit('channel_response', {'data': channel_list, 'status': 'success', 'operation':'get_server_channels'}, room=sid)    
             sio.enter_room(sid, name)
             return sio.emit('channel_response', {'data':"Channel Created Successfully", 'status': 'success', 'operation':'create_channel'}, room=sid)
+        
         else:
             return sio.emit('channel_response', {'data':"Error creating Channel", 'status': 'failure', 'operation':'create_channel'}, room=sid)
     except Exception as e:
@@ -287,6 +293,24 @@ def update_channel(sid, message):
         error_message = str(e)
         return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation':'update_channel'}, room=sid)
 
+@sio.event
+def delete_channel(sid, message):
+    try:
+        channel_id = message['channel_id']
+        response = data_cube.delete_data(db_name="dowellchat", coll_name="channel", query={"_id": channel_id})
+
+        if response['success']:
+            if response['message']:
+                return sio.emit('channel_response', {'data': "Server Deleted Successfully", 'status': 'success', 'operation':'delete_channel'}, room=sid)
+            else:
+                return sio.emit('channel_response', {'data': 'No data found for this query', 'status': 'success', 'operation':'delete_channel'}, room=sid)
+        else:
+            return sio.emit('channel_response', {'data': response['message'], 'status': 'failure', 'operation':'delete_channel'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation':'delete_channel'}, room=sid)
+    
 @sio.event
 def disconnect_request(sid):
     sio.disconnect(sid)
