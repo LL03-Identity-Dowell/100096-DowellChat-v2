@@ -89,8 +89,12 @@ data_cube = DataCubeConnection(api_key)
 #         }
 
 # response = data_cube.update_data(db_name="dowellchat", coll_name="server", query = {"name": 'test_update'}, update_data=updated_data)    
-# response = data_cube.delete_data(db_name="dowellchat", coll_name="server", query={"name": "test_updat"})
-# print(response)
+response = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"name": "test2"}, limit=1, offset=0)
+if response['data'] ==[]:
+    print ("No data Found")
+else:
+    print(response['data'][0]['_id'])
+    print(response)
 
 
 def processApiService(api_key):

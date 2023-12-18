@@ -202,6 +202,45 @@ def delete_server(sid, message):
 
 
 @sio.event
+def create_channel(sid, message):
+    try:
+        name = message['name']
+        topic = message['topic']
+        type = message['type']
+        private = message['private'] 
+        server = message['server']
+        member_list = message['member_list']
+        created_at = message['created_at']
+
+        data = {
+                "name": name,
+                "topic": topic,
+                "type": type,
+                "private": private,
+                "member_list": member_list,
+                "server":server,        
+                "created_at": created_at, 
+        }
+        is_server = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"name": server}, limit=1, offset=0)
+
+        if is_server['data'] ==[]:
+            return sio.emit('channel_response', {'data': 'Server not found', 'status': 'failure', 'operation':'create_channel'}, room=sid)
+            
+        response = data_cube.insert_data(db_name="dowellchat", coll_name="channel", data=data)
+        
+        if response['success'] == True:
+            sio.enter_room(sid, name)
+            return sio.emit('channel_response', {'data':"Channel Created Successfully", 'status': 'success', 'operation':'create_channel'}, room=sid)
+        else:
+            return sio.emit('channel_response', {'data':"Error creating Channel", 'status': 'failure', 'operation':'create_channel'}, room=sid)
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation':'create_channel'}, room=sid)
+
+
+
+@sio.event
 def disconnect_request(sid):
     sio.disconnect(sid)
 
