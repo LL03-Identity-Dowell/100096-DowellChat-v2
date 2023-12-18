@@ -79,23 +79,19 @@ api_key = os.getenv("API_KEY")
 if api_key is None:
     raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
 data_cube = DataCubeConnection(api_key)
-# updated_data = {
-#                 "name": "test_updat",
-#                 "member_list": 'member_list',
-#                 "channels": 'channel',
-#                 "events": 'events',
-#                 "owner": 'owner',
-#                 "created_at": 'created_at', 
-#         }
+
 
 # response = data_cube.update_data(db_name="dowellchat", coll_name="server", query = {"name": 'test_update'}, update_data=updated_data)    
-response = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"name": "test2"}, limit=1, offset=0)
-if response['data'] ==[]:
-    print ("No data Found")
-else:
-    print(response['data'][0]['_id'])
-    print(response)
+# response = data_cube.fetch_data(db_name="dowellchat", coll_name="channel", filters={"server": "test"}, limit=100, offset=0)
+# if response['data'] ==[]:
+#     print ("No data Found")
+# else:
+#     channels=[]
+#     for channel in response['data']:
+#         channels.append(channel['name'])
+#         # print(channel['name'])
 
+#     print(channels)
 
 def processApiService(api_key):
     """The purpose of this request is to process the API key 

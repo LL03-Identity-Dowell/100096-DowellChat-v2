@@ -238,6 +238,30 @@ def create_channel(sid, message):
         error_message = str(e)
         return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation':'create_channel'}, room=sid)
 
+@sio.event
+def get_server_channels(sid, message):
+    try:
+        server_id = message['server_id']
+        response = data_cube.fetch_data(db_name="dowellchat", coll_name="channel", filters={"server": server_id}, limit=199, offset=0)
+        if response['success']:
+            if not response['data']:
+                return sio.emit('channel_response', {'data': 'No Channel found for this Server', 'status': 'failure', 'operation':'get_server_channels'}, room=sid)
+
+            else:
+                channels=[]
+                for channel in response['data']:
+                    channels.append(channel['name'])
+
+                print(channels)
+                return sio.emit('channel_response', {'data': channels, 'status': 'success', 'operation':'get_server_channels'}, room=sid)
+        else:
+            # Error in fetching data
+            return sio.emit('channel_response', {'data': response['message'], 'status': 'failure', 'operation':'get_server_channels'}, room=sid)
+
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation':'get_server_channels'}, room=sid)
 
 
 @sio.event
