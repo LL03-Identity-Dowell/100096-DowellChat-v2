@@ -206,7 +206,7 @@ def create_channel(sid, message):
     try:
         name = message['name']
         topic = message['topic']
-        type = message['type']
+        channel_type = message['type']
         private = message['private'] 
         server = message['server']
         member_list = message['member_list']
@@ -215,7 +215,7 @@ def create_channel(sid, message):
         data = {
                 "name": name,
                 "topic": topic,
-                "type": type,
+                "type": channel_type,
                 "private": private,
                 "member_list": member_list,
                 "server":server,        
@@ -263,6 +263,29 @@ def get_server_channels(sid, message):
         error_message = str(e)
         return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation':'get_server_channels'}, room=sid)
 
+@sio.event
+def update_channel(sid, message):
+    try:
+        name = message['name']
+        topic = message['topic']
+        private = message['private'] 
+
+        update_data = {
+                "name": name,
+                "topic": topic,
+                "private": private,
+        }
+
+        response = data_cube.update_data(db_name="dowellchat", coll_name="channel", query = {"name": name}, update_data=update_data)     
+        
+        if response['success'] == True:
+            return sio.emit('channel_response', {'data':"Channel Updated Successfully", 'status': 'success', 'operation':'update_channel'}, room=sid)
+        else:
+            return sio.emit('channel_response', {'data':"Error updating Channel", 'status': 'failure', 'operation':'update_channel'}, room=sid)
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation':'update_channel'}, room=sid)
 
 @sio.event
 def disconnect_request(sid):
