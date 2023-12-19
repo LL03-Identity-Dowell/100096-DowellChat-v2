@@ -311,6 +311,68 @@ def delete_channel(sid, message):
         error_message = str(e)
         return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation':'delete_channel'}, room=sid)
     
+
+@sio.event
+def add_channel_member(sid, message):
+    try:
+        channel_id = message['channel_id']
+        user_id = message['user_id']
+
+        is_channel = data_cube.fetch_data(db_name="dowellchat", coll_name="channel", filters={"_id": channel_id}, limit=1, offset=0)
+
+        if not is_channel['data']:
+            return sio.emit('channel_response', {'data': 'Channel not found', 'status': 'failure', 'operation': 'add_channel_member'}, room=sid)
+
+        existing_member_list = is_channel['data'][0].get('member_list', [])
+
+        # Check if user_id is already in the member_list
+        if user_id in existing_member_list:
+            return sio.emit('channel_response', {'data': 'User is already a member', 'status': 'failure', 'operation': 'add_channel_member'}, room=sid)
+
+        # Add the user_id to the member_list
+        updated_member_list = existing_member_list + [user_id]
+        update_data = {
+            "member_list": updated_member_list,
+        }
+
+        response = data_cube.update_data(db_name="dowellchat", coll_name="channel", query={"_id": channel_id}, update_data=update_data)
+
+        if response['success']:
+            return sio.emit('channel_response', {'data': "User added Successfully", 'status': 'success', 'operation': 'add_channel_member'}, room=sid)
+        else:
+            return sio.emit('channel_response', {'data': "Error adding user", 'status': 'failure', 'operation': 'add_channel_member'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation': 'add_channel_member'}, room=sid)
+
+@sio.event
+def delete_channel_member(sid, message):
+    try:
+        channel_id = message['channel_id']
+        user_id = message['user_id']
+        is_channel = data_cube.fetch_data(db_name="dowellchat", coll_name="channel", filters={"_id": channel_id}, limit=1, offset=0)
+
+        if not is_channel['data']:
+            return sio.emit('channel_response', {'data': 'Channel not found', 'status': 'failure', 'operation': 'remove_channel_member'}, room=sid)
+        existing_member_list = is_channel['data'][0].get('member_list', [])
+        updated_member_list = [member for member in existing_member_list if member != user_id]
+
+        update_data = {
+            "member_list": updated_member_list,
+        }
+
+        response = data_cube.update_data(db_name="dowellchat", coll_name="channel", query={"_id": channel_id}, update_data=update_data)
+
+        if response['success']:
+            return sio.emit('channel_response', {'data': "User Removed Successfully", 'status': 'success', 'operation': 'remove_channel_member'}, room=sid)
+        else:
+            return sio.emit('channel_response', {'data': "Error removing user from Channel", 'status': 'failure', 'operation': 'remove_channel_member'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation': 'remove_channel_member'}, room=sid)
+
 @sio.event
 def disconnect_request(sid):
     sio.disconnect(sid)
