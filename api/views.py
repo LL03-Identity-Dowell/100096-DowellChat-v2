@@ -99,6 +99,40 @@ def message_event(sid, message):
 """SERVER EVENT SECTION"""
 
 @sio.event
+def get_user_servers(sid, message):
+    try:
+        user_id = message['user_id']
+
+        response = data_cube.fetch_data(
+            db_name="dowellchat",
+            coll_name="server",
+            filters={"$or": [{"owner": user_id}, {"member_list": {"$in": [user_id]}}]},
+            limit=199,
+            offset=0
+        )
+
+        if response['success']:
+            if not response['data']:
+                return sio.emit('server_response', {'data': 'No Server found for this User', 'status': 'failure', 'operation': 'get_user_servers'}, room=sid)
+
+            else:
+                servers = []
+                for server in response['data']:
+                    servers.append({'name': server['name'], 'id': str(server['_id'])})
+
+                print(servers)
+                return sio.emit('server_response', {'data': servers, 'status': 'success', 'operation': 'get_user_servers'}, room=sid)
+        else:
+            # Error in fetching data
+            return sio.emit('server_response', {'data': response['message'], 'status': 'failure', 'operation': 'get_user_servers'}, room=sid)
+
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation': 'get_user_servers'}, room=sid)
+
+
+@sio.event
 def create_server(sid, message):
     try:
         name = message['name']
@@ -200,7 +234,42 @@ def delete_server(sid, message):
         error_message = str(e)
         return sio.emit('server_response', {'data': error_message, 'status': 'failure', 'operation':'delete_server'}, room=sid)
 
+@sio.event
+def add_server_member(sid, message):
+    try:
+        server_id = message['server_id']
+        user_id = message['user_id']
 
+        is_server = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"_id": server_id}, limit=1, offset=0)
+
+        if not is_server['data']:
+            return sio.emit('server_response', {'data': 'Server not found', 'status': 'failure', 'operation': 'add_server_member'}, room=sid)
+
+        existing_member_list = is_server['data'][0].get('member_list', [])
+
+        # Check if user_id is already in the member_list
+        if user_id in existing_member_list:
+            return sio.emit('server_response', {'data': 'User is already a member', 'status': 'failure', 'operation': 'add_server_member'}, room=sid)
+
+        # Add the user_id to the member_list
+        updated_member_list = existing_member_list + [user_id]
+        update_data = {
+            "member_list": updated_member_list,
+        }
+
+        response = data_cube.update_data(db_name="dowellchat", coll_name="server", query={"_id": server_id}, update_data=update_data)
+
+        if response['success']:
+            return sio.emit('server_response', {'data': "User added Successfully", 'status': 'success', 'operation': 'add_server_member'}, room=sid)
+        else:
+            return sio.emit('server_response', {'data': "Error adding user", 'status': 'failure', 'operation': 'add_server_member'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('server_response', {'data': error_message, 'status': 'failure', 'operation': 'add_channel_member'}, room=sid)
+
+
+"""CHANNEL EVENT SECTION"""
 @sio.event
 def create_channel(sid, message):
     try:

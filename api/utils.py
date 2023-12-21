@@ -79,7 +79,14 @@ api_key = os.getenv("API_KEY")
 if api_key is None:
     raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
 data_cube = DataCubeConnection(api_key)
-
+# response = data_cube.fetch_data(
+#             db_name="dowellchat",
+#             coll_name="server",
+#             filters={"$or": [{"owner": "umari"}, {"member_list": {"$in": ["umari"]}}]},
+#             limit=199,
+#             offset=0
+#         )
+# print(response)
 
 # response = data_cube.update_data(db_name="dowellchat", coll_name="server", query = {"name": 'test_update'}, update_data=updated_data)    
 # response = data_cube.fetch_data(db_name="dowellchat", coll_name="channel", filters={"server": "test"}, limit=100, offset=0)
