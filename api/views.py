@@ -462,7 +462,6 @@ def delete_channel(sid, message):
         error_message = str(e)
         return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation':'delete_channel'}, room=sid)
     
-
 @sio.event
 def add_channel_member(sid, message):
     try:
@@ -523,6 +522,82 @@ def delete_channel_member(sid, message):
     except Exception as e:
         error_message = str(e)
         return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation': 'remove_channel_member'}, room=sid)
+
+
+"""CATEGORY EVENT SECTION"""
+@sio.event
+def create_category(sid, message):
+    try:
+        name = message['name']
+        server = message['server_id']
+        private = message['private']
+        created_at = message['created_at']
+
+        data = {
+                "name": name,
+                "server":server,
+                "private": private,        
+                "created_at": created_at, 
+        }
+        is_server = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"_id": server}, limit=1, offset=0)
+
+        if is_server['data'] ==[]:
+            return sio.emit('category_response', {'data': 'Server not found', 'status': 'failure', 'operation':'create_category'}, room=sid)
+            
+        response = data_cube.insert_data(db_name="dowellchat", coll_name="category", data=data)
+        
+        if response['success'] == True:
+            return sio.emit('category_response', {'data':"Category Created Successfully", 'status': 'success', 'operation':'create_category'}, room=sid)
+        
+        else:
+            return sio.emit('category_response', {'data':"Error creating Category", 'status': 'failure', 'operation':'create_category'}, room=sid)
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation':'create_category'}, room=sid)
+
+
+@sio.event
+def update_category(sid, message):
+    try:
+        category_id = message['category_id']
+        name = message['name']
+        private = message['private'] 
+
+        update_data = {
+                "name": name,
+                "private": private,
+        }
+
+        response = data_cube.update_data(db_name="dowellchat", coll_name="category", query = {"_id": category_id}, update_data=update_data)     
+        
+        if response['success'] == True:
+            return sio.emit('category_response', {'data':"Category Updated Successfully", 'status': 'success', 'operation':'update_category'}, room=sid)
+        else:
+            return sio.emit('category_response', {'data':"Error updating Category", 'status': 'failure', 'operation':'update_category'}, room=sid)
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation':'update_category'}, room=sid)
+
+@sio.event
+def delete_category(sid, message):
+    try:
+        category_id = message['category_id']
+        response = data_cube.delete_data(db_name="dowellchat", coll_name="category", query={"_id": category_id})
+
+        if response['success']:
+            if response['message']:
+                return sio.emit('category_response', {'data': "Category Deleted Successfully", 'status': 'success', 'operation':'delete_category'}, room=sid)
+            else:
+                return sio.emit('category_response', {'data': 'No data found for this query', 'status': 'success', 'operation':'delete_category'}, room=sid)
+        else:
+            return sio.emit('category_response', {'data': response['message'], 'status': 'failure', 'operation':'delete_category'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation':'delete_category'}, room=sid)
+
 
 @sio.event
 def disconnect_request(sid):
