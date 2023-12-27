@@ -305,11 +305,14 @@ def delete_server_member(sid, message):
     try:
         server_id = message['server_id']
         user_id = message['user_id']
-        is_server = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"_id": server_id}, limit=1, offset=0)
 
-        if not is_server['data']:
+        server_data = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"_id": server_id}, limit=1, offset=0)
+
+        if not server_data['data']:
             return sio.emit('server_response', {'data': 'Server not found', 'status': 'failure', 'operation': 'remove_server_member'}, room=sid)
-        existing_member_list = is_server['data'][0].get('member_list', [])
+
+        # Delete the user from the server's member list
+        existing_member_list = server_data['data'][0].get('member_list', [])
         updated_member_list = [member for member in existing_member_list if member != user_id]
 
         update_data = {
@@ -318,10 +321,33 @@ def delete_server_member(sid, message):
 
         response = data_cube.update_data(db_name="dowellchat", coll_name="server", query={"_id": server_id}, update_data=update_data)
 
-        if response['success']:
-            return sio.emit('server_response', {'data': "User Removed Successfully", 'status': 'success', 'operation': 'remove_server_member'}, room=sid)
+        if not response['success']:
+            return sio.emit('server_response', {'data': "Error removing user from Server", 'status': 'failure', 'operation': 'remove_server_member'}, room=sid)
+
+        # Fetch the channels associated with the server
+        channels_data = data_cube.fetch_data(db_name="dowellchat", coll_name="channel", filters={"server": server_id}, limit=199, offset=0)
+        channels = channels_data['data']
+
+        user_removed_from_channel = False
+
+        for channel in channels:
+            # Update the channel's member list
+            existing_member_list = channel.get('member_list', [])
+            updated_member_list = [member for member in existing_member_list if member != user_id]
+
+            update_data = {
+                "member_list": updated_member_list,
+            }
+
+            response = data_cube.update_data(db_name="dowellchat", coll_name="channel", query={"_id": channel['_id']}, update_data=update_data)
+
+            if response['success']:
+                user_removed_from_channel = True
+
+        if user_removed_from_channel:
+            return sio.emit('server_response', {'data': "User removed from Server and all channels", 'status': 'success', 'operation': 'remove_server_member'}, room=sid)
         else:
-            return sio.emit('server_response', {'data': "Error removing user from Channel", 'status': 'failure', 'operation': 'remove_server_member'}, room=sid)
+            return sio.emit('server_response', {'data': "User removed from Server only or an error occurred", 'status': 'failure', 'operation': 'remove_server_member'}, room=sid)
 
     except Exception as e:
         error_message = str(e)
@@ -349,7 +375,7 @@ def create_channel(sid, message):
                 "server":server,        
                 "created_at": created_at, 
         }
-        is_server = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"name": server}, limit=1, offset=0)
+        is_server = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"_id": server}, limit=1, offset=0)
 
         if is_server['data'] ==[]:
             return sio.emit('channel_response', {'data': 'Server not found', 'status': 'failure', 'operation':'create_channel'}, room=sid)
@@ -426,7 +452,7 @@ def delete_channel(sid, message):
 
         if response['success']:
             if response['message']:
-                return sio.emit('channel_response', {'data': "Server Deleted Successfully", 'status': 'success', 'operation':'delete_channel'}, room=sid)
+                return sio.emit('channel_response', {'data': "Channel Deleted Successfully", 'status': 'success', 'operation':'delete_channel'}, room=sid)
             else:
                 return sio.emit('channel_response', {'data': 'No data found for this query', 'status': 'success', 'operation':'delete_channel'}, room=sid)
         else:
