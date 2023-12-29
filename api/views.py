@@ -1,7 +1,7 @@
 import time
 import json
-# async_mode = 'gevent'
-async_mode = "threading"
+async_mode = 'gevent'
+# async_mode = "threading"
 from .models import Room, Message
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from rest_framework.decorators import api_view
@@ -598,6 +598,54 @@ def delete_category(sid, message):
         error_message = str(e)
         return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation':'delete_category'}, room=sid)
 
+
+
+"""EVENT EVENT SECTION"""
+
+
+def emit_response(sid, event, data, status, operation):
+    sio.emit(event, {
+        'data': data,
+        'status': status,
+        'operation': operation
+    }, room=sid)
+
+
+@sio.event
+def create_event(sid, message):
+    try:
+        topic = message['topic']
+        start_date = message['start_date']
+        start_time = message['start_time']
+        description = message['description']
+        location = message['location']
+        server = message['server']
+        created_at = message['created_at']
+
+        data = {
+                "topic": topic,
+                "start_date": start_date,
+                "start_time": start_time,
+                "description": description,
+                "location": location, 
+                "server":server,
+                "created_at": created_at, 
+        }
+        is_server = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"_id": server}, limit=1, offset=0)
+
+        if is_server['data'] ==[]:
+            return emit_response(sid, "event_response", "Server not found", 'failure', 'create_event')
+            
+        response = data_cube.insert_data(db_name="dowellchat", coll_name="event", data=data)
+                
+        if response['success'] == True:
+            return emit_response(sid, "event_response", "Event Created Successfully", 'success', 'create_event')
+        
+        else:
+            return emit_response(sid, "event_response", "Error creating event", 'failure', 'create_event')
+
+    except Exception as e:
+        return emit_response(sid, "event_response", str(e), 'failure', 'create_event')
 
 @sio.event
 def disconnect_request(sid):
