@@ -85,7 +85,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* <div className="">
+      <div className="">
       <div className={`col-span-3 bg-white ${isOpen ? "block" : "hidden"}`}>
         <div className="mt-6 font-bold text-3xl"> WorkflowAI </div>
         <div
@@ -163,7 +163,7 @@ export default function App() {
           </div>
         </div>
       </div>
-    </div> */}
+    </div>
 
       {/* <div className={`col-span-${columnSpanClass} bg-white`}>
         <div className="flex     border-gray-700 bg-gray-100 justify-between p-4">
