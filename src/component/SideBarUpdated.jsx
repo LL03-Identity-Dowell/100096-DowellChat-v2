@@ -6,7 +6,7 @@ const SideBarUpdated = () => {
   const imageSources = [logo, logo, logo, logo, logo, logo]; // Array of image sources
 
   return (
-    <div className="block">
+    <div className="block bg-gray-300">
       <div className="h-screen w-16 bg-[#DCDCDC] flex flex-col items-center z-50">
         <div className="rounded-full  ">
           <FaMessage className="w-10 text-green-500 rounded-md my-4 h-10" />
