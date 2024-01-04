@@ -1,26 +1,28 @@
-import LoginPage from "./pages/LoginPage";
-import { useState } from "react";
-import Dashboard from "./pages/Dashboard";
-import Avatar from "react-avatar";
-import { MdVideoCall } from "react-icons/md";
-import { IoCall } from "react-icons/io5";
+// import LoginPage from "./pages/LoginPage";
+// import { useState } from "react";
+// import Dashboard from "./pages/Dashboard";
+// import Avatar from "react-avatar";
+// import { MdVideoCall } from "react-icons/md";
+// import { IoCall } from "react-icons/io5";
 import SideBarUpdated from "./component/SideBarUpdated";
-import SearchSection from "./component/SearchSection";
+// import SearchSection from "./component/SearchSection";
 // import logo from "logo.jpg"
 
 export default function App() {
-  const [isOpen, setIsOpen] = useState(false);
+  // const [isOpen, setIsOpen] = useState(false);
 
-  const toggleSection = () => {
-    setIsOpen(!isOpen);
-  };
+  // const toggleSection = () => {
+  //   setIsOpen(!isOpen);
+  // };
 
-  const columnSpanClass = isOpen ? "9" : "11";
+  // const columnSpanClass = isOpen ? "9" : "11";
 
   return (
-    <div className="grid h-screen grid-cols-12 bg-[#DCDCDC]">
-      <div className="grid col-span-1"></div>
-      <SideBarUpdated />
+    <div className="grid h-screen grid-cols-12 bg-[#DCDCDC] ">
+      {/* <div className="grid col-span-1"></div> */}
+      <div className="grid col-span-3 ">
+        <SideBarUpdated />
+      </div>
 
       {/* {isOpen ? (
         <div className="hidden md:grid w-full col-start-2 col-span-11">
