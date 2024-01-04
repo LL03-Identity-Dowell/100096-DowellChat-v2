@@ -3,8 +3,7 @@ import { FaMessage } from "react-icons/fa6";
 
 const SearchSection = ({ isOpen }) => {
   return (
-    <div className="w-full h-full">
-      <div className={`col-span-3 bg-white   w-[100%]  ${isOpen ? "block" : "hidden"}`}>
+      <div className={`col-span-2 bg-white   ${isOpen ? "block" : "hidden"} pl-4`}>
         <div className="mt-6 font-bold text-3xl"> WorkflowAI </div>
         <div
           className={`flex flex-col mt-12 mr-4 ${
@@ -81,7 +80,6 @@ const SearchSection = ({ isOpen }) => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
 

@@ -15,77 +15,69 @@ export default function App() {
     setIsOpen(!isOpen);
   };
 
-  const columnSpanClass = isOpen ? "9" : "11";
-
   return (
-    <div className="grid h-screen grid-cols-12 gap-">
-      <div className="grid col-span-1"></div>
+    <div className="h-screen flex flex-row">
       <SideBarUpdated />
-
-      {isOpen ? (
-        <div className="hidden md:grid w-full col-start-2 col-span-11">
+      <div className="grid grid-cols-10 w-full">
+        {isOpen && (
           <SearchSection isOpen={isOpen} />
-        </div>
-      ) : (
-        <SearchSection isOpen={isOpen} />
-      )}
-      <div
-        className={`col-span-${columnSpanClass} md:col-start-2 md:col-span-12 bg-white`}
-      >
-        {" "}
-        <div className="flex border-gray-700 bg-[#F1F3F4] justify-between p-4">
-          <div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              className="w-12 h-12"
-              onClick={toggleSection}
-            >
-              <path d="M3 12h18M3 6h18M3 18h18"></path>
-            </svg>
-          </div>
-          <div className="flex ">
-            <img
-              src="avatar.jpg"
-              alt="Rounded Image"
-              className="w-16 h-16 rounded-full"
-            />
-            <div className="font-bold ml-3 mt-4 hidden md:block">
-              WORKFLOW AI
-            </div>{" "}
-          </div>
+        )}
 
-          <div className="flex space-x-2 md:space-x-4 lg:space-x-6">
-            <div className="hidden md:block">
-              <MdVideoCall className="w-12 h-12 text-xl" />
+        <div className={`${isOpen ? 'col-span-8' : 'col-span-10'}`}>
+          <div className="flex justify-between p-4 border-gray-700 bg-[#F1F3F4]">
+            <div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                className="w-12 h-12"
+                onClick={toggleSection}
+              >
+                <path d="M3 12h18M3 6h18M3 18h18"></path>
+              </svg>
             </div>
-            <div className="hidden md:block">
-              <IoCall className="w-10 h-10 text-xl" />
+            <div className="flex ">
+              <img
+                src="avatar.jpg"
+                alt="Rounded Image"
+                className="w-16 h-16 rounded-full"
+              />
+              <div className="font-bold ml-3 mt-4 hidden md:block">
+                WORKFLOW AI
+              </div>{" "}
             </div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-10 h-10"
-            >
-              <circle cx="12" cy="12" r="1"></circle>
-              <circle cx="12" cy="5" r="1"></circle>
-              <circle cx="12" cy="19" r="1"></circle>
-            </svg>
+
+            <div className="flex space-x-2 md:space-x-4 lg:space-x-6">
+              <div className="hidden md:block">
+                <MdVideoCall className="w-12 h-12 text-xl" />
+              </div>
+              <div className="hidden md:block">
+                <IoCall className="w-10 h-10 text-xl" />
+              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-10 h-10"
+              >
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="12" cy="5" r="1"></circle>
+                <circle cx="12" cy="19" r="1"></circle>
+              </svg>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="">
+      {/* <div className="">
       <div className={`col-span-3 bg-white ${isOpen ? "block" : "hidden"}`}>
         <div className="mt-6 font-bold text-3xl"> WorkflowAI </div>
         <div
@@ -163,7 +155,7 @@ export default function App() {
           </div>
         </div>
       </div>
-    </div>
+    </div> */}
 
       {/* <div className={`col-span-${columnSpanClass} bg-white`}>
         <div className="flex     border-gray-700 bg-gray-100 justify-between p-4">
