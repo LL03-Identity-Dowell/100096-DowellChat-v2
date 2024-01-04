@@ -18,11 +18,11 @@ export default function App() {
   const columnSpanClass = isOpen ? "9" : "11";
 
   return (
-    <div className="grid h-screen grid-cols-12 gap-">
+    <div className="grid h-screen grid-cols-12 bg-[#DCDCDC]">
       <div className="grid col-span-1"></div>
       <SideBarUpdated />
 
-      {isOpen ? (
+      {/* {isOpen ? (
         <div className="hidden md:grid w-full col-start-2 col-span-11">
           <SearchSection isOpen={isOpen} />
         </div>
@@ -163,7 +163,7 @@ export default function App() {
           </div>
         </div>
       </div>
-    </div>
+    </div> */}
 
       {/* <div className={`col-span-${columnSpanClass} bg-white`}>
         <div className="flex     border-gray-700 bg-gray-100 justify-between p-4">
