@@ -3,9 +3,11 @@ import logo from "/logo.jpg";
 import { FaMessage } from "react-icons/fa6";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useState } from "react";
 
 const SideBarUpdated = () => {
-  const imageSources = [logo, logo, logo, logo, logo, logo]; // Array of image sources
+  const [activeBorder, setActiveBorder] = useState(0);
+  const imageSources = [FaMessage, logo, logo, logo, logo, logo, logo]; // Array of image sources
   const chatUsers = [
     {
       src: logo,
@@ -20,22 +22,53 @@ const SideBarUpdated = () => {
       desc3: "WORKFLOWAI",
     },
   ];
+
+  // ===========All Event Handlers=======
+  const isActiveImg = (index) => {
+    setActiveBorder(index);
+  };
   return (
     <div className="flex">
-      <div className=" top-0 left-0 h-screen w-16 flex flex-col items-center z-50">
-        <div className="rounded-full  ">
+      {console.log(activeBorder)}
+      <div className=" top-0 left-0 h-screen py-4  flex flex-col gap-4 px-[15px] items-center z-50">
+        {/* <div className="rounded-full  ">
           <FaMessage className="w-10 text-green-500 rounded-md my-4 h-10" />
-        </div>
+        </div> */}
         <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-500"></div>
 
-        {imageSources.map((src, index) => (
-          <img
-            key={index}
-            src={src}
-            alt={`Logo ${index}`}
-            className="w-10 h-10 rounded-full mb-4"
-          />
-        ))}
+        {imageSources.map((Element, index) =>
+          typeof Element === "function" ? (
+            <div key={index} className="relative h-[40px]">
+              <Element
+                onClick={() => isActiveImg(index)}
+                className={`cursor-pointer w-10 text-green-500 rounded-md  h-10 `}
+              />
+
+              {activeBorder === index && (
+                <p className="cursor-pointer w-[6px] h-[80%] bg-green-500 absolute left-[-15px] rounded-r-[100px]  top-[2px]"></p>
+              )}
+
+              {activeBorder === index && (
+                <p className="cursor-pointer w-full h-[2px] bg-black absolute left-0 rounded-r-[100px]  bottom-[-7px]"></p>
+              )}
+            </div>
+          ) : (
+            <div className="relative h-[40px]" key={index}>
+              <img
+                onClick={() => isActiveImg(index)}
+                src={Element}
+                alt={`Logo ${index}`}
+                className={`cursor-pointer w-10 h-10 rounded-full `}
+              />
+              {activeBorder === index && (
+                <p className=" w-[6px] h-[80%] bg-green-500 absolute left-[-15px] rounded-r-[100px]  top-[2px]"></p>
+              )}
+              {activeBorder === index && (
+                <p className=" w-full h-[2px] bg-black absolute left-0 rounded-r-[100px]  bottom-[-7px]"></p>
+              )}
+            </div>
+          )
+        )}
         {/* Your SideBarUpdated content */}
       </div>
 
