@@ -3,9 +3,6 @@ import SideBarUpdated from "./component/SideBarUpdated";
 import SearchSection from "./component/SearchSection";
 import ChatSection from "./component/ChatSection";
 
-// import logo from "logo.jpg"
-
-
 
 export default function App() {
 
