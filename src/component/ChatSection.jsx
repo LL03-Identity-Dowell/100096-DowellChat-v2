@@ -58,9 +58,9 @@ const ChatSection = ({isOpen, setIsOpen}) => {
             <button className="cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
                 {
                     isOpen ? (
-                        <MdOutlineMenuOpen className="w-10 h-10 text-xl"/>
+                        <MdOutlineMenuOpen className="w-6 md:w-10 h-10 "/>
                     ):(
-                        <IoMenuSharp className="w-10 h-10 text-xl"/>
+                        <IoMenuSharp className="w-6 md:w-10 h-10  "/>
                     )
                 }
             </button>
@@ -69,17 +69,17 @@ const ChatSection = ({isOpen, setIsOpen}) => {
             <img
               src="avatar.jpg"
               alt="Rounded Image"
-              className="w-16 h-16 rounded-full"
+              className="w-10 md:w-16 rounded-full"
             />
             <div className="font-bold ml-3 mt-4 hidden md:block">
               WORKFLOW AI
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 md:space-x-4 lg:space-x-6">
-              <MdVideoCall className="w-10 h-10 text-xl" />
-              <IoCall className="w-8 h-8 text-xl" />
-              <FaEllipsisVertical className="w-8 h-8 text-xl"/>
+          <div className="flex items-center space-x-3 md:space-x-4 lg:space-x-6">
+              <MdVideoCall className="w-6 md:w-10 h-10 text-xl" />
+              <IoCall className="w-4 md:w-8  h-8 text-xl" />
+              <FaEllipsisVertical className="w-4 md:w-8 h-6 md:h-8 "/>
           </div>
         </div>
 
@@ -94,7 +94,7 @@ const ChatSection = ({isOpen, setIsOpen}) => {
         </section>
 
         <div className="relative flex items-center p-4 bg-white">
-            <input type="text" placeholder="Type here ..." value={chatInput} onChange={() => setChatInput(chatInput)} className="w-full rounded-lg border border-gray-300 px-4 py-2"/>
+            <input type="text" placeholder="Type here ..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} className="w-full rounded-lg border border-gray-300 px-4 py-2"/>
             <MdOutlineAttachFile className="absolute  text-gray-500 hover:text-gray-700 pt-1 right-32 h-10 w-6 cursor-pointer transform rotate-12 origin-center" />
             <button className="ml-2 rounded-lg bg-blue-500 px-4 py-2 text-white inline-flex items-center">
                 <span >Send</span>
