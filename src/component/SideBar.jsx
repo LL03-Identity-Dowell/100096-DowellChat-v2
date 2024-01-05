@@ -4,7 +4,7 @@ import { FaMessage } from "react-icons/fa6";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-const SideBar = ({isOpen}) => {
+const SideBar = ({isOpen, setIsOpen}) => {
   const imageSources = [logo, logo, logo, logo, logo, logo]; // Array of image sources
   const chatUsers = [
     {
@@ -21,8 +21,8 @@ const SideBar = ({isOpen}) => {
     },
   ];
   return (
-    <div className={`flex w-full`}>
-      <div className=" top-0 left-0 h-screen w-16 flex flex-col items-center z-50">
+    <div className={`flex flex-grow `}>
+      <div className=" top-0 left-0 h-screen w-14 md:w-16 flex flex-col items-center z-50">
         <div className="rounded-full  ">
           <FaMessage className="w-10 text-green-500 rounded-md my-4 h-10" />
         </div>
@@ -39,9 +39,9 @@ const SideBar = ({isOpen}) => {
         {/* Your SideBarUpdated content */}
       </div>
 
-      <div className={`${isOpen ? 'block' : 'hidden'} flex flex-col gap-4 pt-7 bg-white rounded-lg px-4`}>
+      <div className={`${isOpen ? 'block' : 'hidden'} flex-grow flex-shrink flex flex-col gap-4 pt-7 bg-white rounded-lg px-4`}>
         <h1 className="font-bold">WORKFLOWAI</h1>
-        <div className="mx-auto px-2 flex items-center bg-gray-200 rounded-sm">
+        <div className="mr-auto px-2 flex items-center bg-gray-200 rounded-sm">
           <input
             type="text"
             className="font-semibold placeholder-gray-400 bg-transparent focus:outline-none p-1"
@@ -52,7 +52,7 @@ const SideBar = ({isOpen}) => {
         </div>
 
         {chatUsers.map((item, index) => (
-          <div className="flex gap-3 items-center mb-2" key={index}>
+          <button className="flex gap-3 items-center mb-2" key={index} onClick={() => setIsOpen(false)}>
             <img
               src="avatar.jpg"
               className="w-10 h-10 rounded-full mb-4 bg-yellow-500"
@@ -64,7 +64,7 @@ const SideBar = ({isOpen}) => {
               <p className="text-sm font-semibold my-0.5">{item?.desc2} </p>
               <p className="text-xs font-semibold">{item?.desc3} </p>
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>

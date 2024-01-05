@@ -9,7 +9,7 @@ export default function App() {
 
   return (
     <div className="h-screen flex bg-gray-300">
-      <SideBar isOpen={isOpen}/>
+      <SideBar isOpen={isOpen} setIsOpen={setIsOpen}/>
       <ChatSection isOpen={isOpen} setIsOpen={setIsOpen}/>
     </div>
   );
