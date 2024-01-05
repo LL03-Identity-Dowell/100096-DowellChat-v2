@@ -53,7 +53,7 @@ const ChatSection = ({isOpen, setIsOpen}) => {
   
 
     return (
-        <div className={`${isOpen ? 'col-span-8' : 'col-span-10'} ml-3 flex flex-col max-h-screen`}>
+        <div className={`ml-3 flex flex-col max-h-screen`}>
         <div className="flex justify-between items-center p-4 bg-[#F1F3F4] border-b-2 border-gray-300 rounded-t-3xl">
             <button className="cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
                 {
