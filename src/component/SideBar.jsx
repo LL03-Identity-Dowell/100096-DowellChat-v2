@@ -21,7 +21,7 @@ const SideBar = ({isOpen}) => {
     },
   ];
   return (
-    <div className="flex ">
+    <div className={`flex w-full`}>
       <div className=" top-0 left-0 h-screen w-16 flex flex-col items-center z-50">
         <div className="rounded-full  ">
           <FaMessage className="w-10 text-green-500 rounded-md my-4 h-10" />
@@ -41,7 +41,7 @@ const SideBar = ({isOpen}) => {
 
       <div className={`${isOpen ? 'block' : 'hidden'} flex flex-col gap-4 pt-7 bg-white rounded-lg px-4`}>
         <h1 className="font-bold">WORKFLOWAI</h1>
-        <div className="max-w-md mx-auto px-2 flex items-center bg-gray-200 rounded-sm">
+        <div className="mx-auto px-2 flex items-center bg-gray-200 rounded-sm">
           <input
             type="text"
             className="font-semibold placeholder-gray-400 bg-transparent focus:outline-none p-1"

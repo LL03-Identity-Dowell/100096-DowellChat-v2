@@ -8,11 +8,9 @@ export default function App() {
   const [isOpen, setIsOpen] = useState(true);
 
   return (
-    <div className="h-screen flex flex-row bg-gray-300">
+    <div className="h-screen flex bg-gray-300">
       <SideBar isOpen={isOpen}/>
-      <div className="w-full">
-        <ChatSection isOpen={isOpen} setIsOpen={setIsOpen}/>
-      </div>
+      <ChatSection isOpen={isOpen} setIsOpen={setIsOpen}/>
     </div>
   );
 }
