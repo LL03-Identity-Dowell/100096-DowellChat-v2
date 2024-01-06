@@ -36,7 +36,6 @@ const SideBar = ({isOpen, setIsOpen}) => {
             className="w-10 h-10 rounded-full mb-4"
           />
         ))}
-        {/* Your SideBarUpdated content */}
       </div>
 
       <div className={`${isOpen ? 'block' : 'hidden'} flex-grow flex-shrink flex flex-col gap-4 pt-7 bg-white rounded-lg px-4`}>
@@ -52,7 +51,9 @@ const SideBar = ({isOpen, setIsOpen}) => {
         </div>
 
         {chatUsers.map((item, index) => (
-          <button className="flex gap-3 items-center mb-2" key={index} onClick={() => setIsOpen(false)}>
+          <button className="flex gap-3 items-center mb-2" key={index}
+           onClick={() => setIsOpen(false)} 
+           >
             <img
               src="avatar.jpg"
               className="w-10 h-10 rounded-full mb-4 bg-yellow-500"
