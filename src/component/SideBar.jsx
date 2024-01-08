@@ -1,57 +1,104 @@
-import React from "react";
-import {
-  ArrowUpIcon,
-  BellIcon,
-  ChartBarIcon,
-  CreditCardIcon,
-  DocumentSearchIcon,
-  ExternalLinkIcon,
-  HomeIcon,
-  MailIcon,
-} from "@heroicons/react/solid";
+import logo from "/logo.jpg";
+import { FaMessage } from "react-icons/fa6";
+import { faSearch } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useState } from "react";
 
-const Sidebar = () => {
+const SideBar = ({ isOpen, setIsOpen }) => {
+  const [activeBorder, setActiveBorder] = useState(0);
+  const imageSources = [FaMessage, logo, logo, logo, logo, logo, logo]; // Array of image sources
+  const chatUsers = [
+    {
+      src: logo,
+      desc1: "47535785834",
+      desc2: "cb1be95",
+      desc3: "WORKFLOWAI",
+    },
+    {
+      src: logo,
+      desc1: "47535785834",
+      desc2: "cb1be95",
+      desc3: "WORKFLOWAI",
+    },
+  ];
+
+  // ===========All Event Handlers=======
+  const isActiveImg = (index) => {
+    setActiveBorder(index);
+  };
   return (
-    <div className="bg-gray-300 flex-none w-14 sm:w-20 h-screen">
-      <div className="h-20 items-center flex">
-        <HomeIcon width={40} className="text-gray-300 left-3 sm:left-6 fixed" />
+    <div className="flex">
+      <div className=" top-0 left-0 h-screen py-4  flex flex-col gap-4 px-[15px] items-center z-50">
+        <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-500"></div>
+
+        {imageSources.map((Element, index) =>
+          typeof Element === "function" ? (
+            <div key={index} className="relative h-[40px]">
+              <Element
+                onClick={() => isActiveImg(index)}
+                className={`cursor-pointer w-10 text-green-500 rounded-md  h-10 `}
+              />
+
+              {activeBorder === index && (
+                <p className="cursor-pointer w-[6px] h-[80%] bg-green-500 absolute left-[-15px] rounded-r-[100px]  top-[2px]"></p>
+              )}
+
+              {activeBorder === index && (
+                <p className="cursor-pointer w-full h-[2px] bg-[#94a3b8] absolute left-0 rounded-r-[100px]  bottom-[-7px]"></p>
+              )}
+            </div>
+          ) : (
+            <div className="relative h-[40px]" key={index}>
+              <img
+                onClick={() => isActiveImg(index)}
+                src={Element}
+                alt={`Logo ${index}`}
+                className={`cursor-pointer w-10 h-10 rounded-full `}
+              />
+              {activeBorder === index && (
+                <p className=" w-[6px] h-[80%] bg-green-500 absolute left-[-15px] rounded-r-[100px]  top-[2px]"></p>
+              )}
+              {activeBorder === index && (
+                <p className=" w-full h-[2px] bg-[#94a3b8] absolute left-0 rounded-r-[100px]  bottom-[-7px]"></p>
+              )}
+            </div>
+          )
+        )}
+        {/* Your SideBarUpdated content */}
       </div>
-      <div className="fixed left-3 sm:left-6 top-[100px]">
-        <ChartBarIcon
-          width={40}
-          className="bg-gray-600 p-2 rounded-lg mb-4 text-gray-300"
-        />
-        <DocumentSearchIcon
-          width={40}
-          className="bg-gray-600 p-2 rounded-lg mb-4 text-gray-300"
-        />
-        <MailIcon
-          width={40}
-          className="bg-gray-600 p-2 rounded-lg mb-4 text-gray-300"
-        />
-        <CreditCardIcon
-          width={40}
-          className="bg-gray-600 p-2 rounded-lg mb-4 text-gray-300"
-        />
-        <BellIcon
-          width={40}
-          className="bg-gray-600 p-2 rounded-lg mb-4 text-gray-300"
-        />
-      </div>
-      <div className="fixed bottom-4 left-3 sm:left-6">
-        <a href="#top">
-          <ArrowUpIcon
-            width={40}
-            className="bg-gray-600 p-2 rounded-lg mb-4 text-gray-300"
-          />
-        </a>
-        <ExternalLinkIcon
-          width={40}
-          className="bg-gray-600 p-2 rounded-lg mb-4 text-gray-300"
-        />
-      </div>
+
+      {isOpen && (
+        <div className={`flex flex-col gap-4 pt-7 bg-white rounded-lg px-4 `}>
+          <h1 className="font-bold">WORKFLOWAI</h1>
+          <div className="max-w-md mx-auto px-2 flex items-center bg-gray-200 rounded-sm">
+            <input
+              type="text"
+              className="font-semibold placeholder-gray-400 bg-transparent focus:outline-none p-1"
+              placeholder="Find a chat"
+            />
+
+            <FontAwesomeIcon icon={faSearch} className="text-gray-400 pr-1" />
+          </div>
+
+          {chatUsers.map((item, index) => (
+            <button className="flex gap-3 items-center mb-2" key={index} onClick={() => setIsOpen(false)}>
+              <img
+                src="avatar.jpg"
+                className="w-10 h-10 rounded-full mb-4 bg-yellow-500"
+                alt={`User ${index}`}
+              />
+
+              <div>
+                <p className="text-sm font-semibold">{item?.desc1} </p>
+                <p className="text-sm font-semibold my-0.5">{item?.desc2} </p>
+                <p className="text-xs font-semibold">{item?.desc3} </p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
-export default Sidebar;
+export default SideBar;
