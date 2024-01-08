@@ -649,6 +649,23 @@ def create_event(sid, message):
         return emit_response(sid, "event_response", str(e), 'failure', 'create_event')
 
 
+@sio.event
+def get_server_events(sid, message):
+    try:
+        server_id = message['server_id']
+        response = data_cube.fetch_data(db_name="dowellchat", coll_name="events", filters={"server": server_id}, limit=199, offset=0)
+        if response['success']:
+            if not response['data']:
+                return sio.emit('event_response', {'data': 'No Event found for this Server', 'status': 'failure', 'operation':'get_server_events'}, room=sid)
+            else:
+                return sio.emit('event_response', {'data': response['data'], 'status': 'success', 'operation':'get_server_events'}, room=sid)
+        else:
+            return sio.emit('event_response', {'data': response['message'], 'status': 'failure', 'operation':'get_server_events'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('event_response', {'data': error_message, 'status': 'failure', 'operation':'get_server_events'}, room=sid)
+
 
 @sio.event
 def disconnect_request(sid):
