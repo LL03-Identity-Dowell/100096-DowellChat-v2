@@ -1,7 +1,7 @@
 import time
 import json
-async_mode = 'gevent'
-# async_mode = "threading"
+# async_mode = 'gevent'
+async_mode = "threading"
 from .models import Room, Message
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from rest_framework.decorators import api_view
@@ -164,8 +164,8 @@ def create_server(sid, message):
 @sio.event
 def get_server(sid, message):
     try:
-        server_name = message['server_name']
-        response = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"name": server_name}, limit=1, offset=0)
+        server_id = message['server_id']
+        response = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"_id": server_id}, limit=1, offset=0)
 
         if response['success']:
             if response['data']:
@@ -636,8 +636,9 @@ def create_event(sid, message):
         if is_server['data'] ==[]:
             return emit_response(sid, "event_response", "Server not found", 'failure', 'create_event')
             
-        response = data_cube.insert_data(db_name="dowellchat", coll_name="event", data=data)
-                
+        response = data_cube.insert_data(db_name="dowellchat", coll_name="events", data=data)
+        
+        print(response)
         if response['success'] == True:
             return emit_response(sid, "event_response", "Event Created Successfully", 'success', 'create_event')
         
@@ -646,6 +647,8 @@ def create_event(sid, message):
 
     except Exception as e:
         return emit_response(sid, "event_response", str(e), 'failure', 'create_event')
+
+
 
 @sio.event
 def disconnect_request(sid):
