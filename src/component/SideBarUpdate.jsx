@@ -136,8 +136,8 @@ const SideBarUpdated = ({ isOpen, setIsOpen }) => {
   };
   return (
     <div className="flex">
-      <div className=" top-0 left-0 h-screen py-4  flex flex-col gap-4 px-[15px] items-center z-50">
-        <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-500"></div>
+      <div className="  top-0 left-0 h-screen py-4  flex flex-col gap-4 px-[15px] items-center z-50">
+        {/* <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-500"></div>  */}
 
         {imageSources.map((Element, index) =>
           typeof Element === "function" ? (
@@ -176,16 +176,20 @@ const SideBarUpdated = ({ isOpen, setIsOpen }) => {
       </div>
 
       {isOpen && (
-        <div className={`flex flex-col gap-4 pt-7 bg-white rounded-lg px-4 `}>
+        <div
+          className={`max-[600px]:w-40 flex flex-col gap-4 pt-7 bg-white rounded-lg max-[600px]:px-2 px-4 `}
+        >
           <h1 className="font-bold">WORKFLOWAI</h1>
-          <div className="max-w-md mx-auto px-2 flex items-center bg-gray-200 rounded-sm">
+          <div className="px-2 relative items-center bg-gray-200 rounded-sm">
             <input
               type="text"
               className="font-semibold placeholder-gray-400 bg-transparent focus:outline-none p-1"
               placeholder="Find a chat"
             />
-
-            <FontAwesomeIcon icon={faSearch} className="text-gray-400 pr-1" />
+            <FontAwesomeIcon
+              icon={faSearch}
+              className="text-gray-400 pr-1 absolute top-2/4 right-1 translate-y-[-50%]"
+            />
           </div>
 
           {chatUsers.map((item, index) => (
