@@ -5,7 +5,7 @@ const ChatMessage = ({ message }) => {
     <div className={`${message?.isSender ? "self-end" : "self-start"}`}>
           { 
             message?.type == 'image' ? (
-                <div className="w-60 mx-10 my-5">
+                <div className="w-60 mx-4 md:mx-10 my-5">
                     <img src={message?.imagePath} className="w-full object-cover rounded-lg" alt='image'/>
                 </div> 
                 ) : (

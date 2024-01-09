@@ -60,7 +60,7 @@ const ChatSection = ({ isOpen, setIsOpen, handleSideBarToggle }) => {
   }, [messages]);
 
   return (
-    <div className={`ml-1 md:ml-3 flex flex-col max-h-screen flex-1 min-w-0  ${isOpen && 'hidden md:flex'}`}>
+    <div className={`ml-0 md:ml-3 flex flex-col flex-1 h-full min-w-0 min-h-0  ${isOpen && 'hidden md:flex'}`}>
       <div className="flex justify-between items-center p-4 bg-[#F1F3F4] border-b-2 border-gray-300 rounded-t-3xl">
         <button className="cursor-pointer" onClick={handleSideBarToggle}>
           {isOpen ? (
@@ -89,8 +89,8 @@ const ChatSection = ({ isOpen, setIsOpen, handleSideBarToggle }) => {
       </div>
 
       <section
-        ref={scrollContainerRef}
-        className="h-[80%] flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-white px-2"
+        // ref={scrollContainerRef}
+        className=" flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden bg-white px-2"
       >
         <div className="flex flex-col space-y-2 justify-end">
           {messages.map((message, index) => (
@@ -99,7 +99,7 @@ const ChatSection = ({ isOpen, setIsOpen, handleSideBarToggle }) => {
         </div>
       </section>
 
-      <div className="relative flex items-center p-4 bg-white">
+      <div className="sticky bottom-0 flex items-center p-4 bg-white">
         <input
           type="text"
           placeholder="Type here ..."
