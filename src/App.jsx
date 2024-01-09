@@ -8,7 +8,7 @@ export default function App() {
     setIsOpen(!isOpen);
   };
   return (
-    <div className="h-screen flex bg-gray-300">
+    <div className="h-screen w-screen flex bg-gray-300">
       <SideBar
         isOpen={isOpen}
         setIsOpen={setIsOpen}

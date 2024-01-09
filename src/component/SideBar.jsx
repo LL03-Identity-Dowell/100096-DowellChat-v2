@@ -28,8 +28,7 @@ const SideBar = ({ isOpen, setIsOpen }) => {
   };
   return (
     <div className="flex">
-      <div className=" top-0 left-0 h-screen py-4  flex flex-col gap-4 px-[15px] items-center z-50">
-        <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-500"></div>
+      <div className="h-screen py-4 flex flex-col gap-4 px-1 md:px-3 items-center z-50">
 
         {imageSources.map((Element, index) =>
           typeof Element === "function" ? (
@@ -76,7 +75,6 @@ const SideBar = ({ isOpen, setIsOpen }) => {
               className="font-semibold placeholder-gray-400 bg-transparent focus:outline-none p-1"
               placeholder="Find a chat"
             />
-
             <FontAwesomeIcon icon={faSearch} className="text-gray-400 pr-1" />
           </div>
 
