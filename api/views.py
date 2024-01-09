@@ -684,6 +684,37 @@ def get_event_details(sid, message):
         return sio.emit('event_response', {'data': error_message, 'status': 'failure', 'operation':'get_event_details'}, room=sid)
 
 @sio.event
+def update_event(sid, message):
+    try:
+        event_id = message['event_id']
+        topic = message['topic']
+        start_date = message['start_date']
+        start_time = message['start_time']
+        description = message['description']
+        location = message['location']
+
+        update_data = {
+                "topic": topic,
+                "start_date": start_date,
+                "start_time": start_time,
+                "description": description,
+                "location": location, 
+        }
+
+        response = data_cube.update_data(db_name="dowellchat", coll_name="events", query = {"_id": event_id}, update_data=update_data)     
+        print(response)
+        if response['success'] == True:
+            return sio.emit('event_response', {'data':"Event Updated Successfully", 'status': 'success', 'operation':'update_event'}, room=sid)
+        else:
+            return sio.emit('event_response', {'data':"Error updating Event", 'status': 'failure', 'operation':'update_event'}, room=sid)
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('event_response', {'data': error_message, 'status': 'failure', 'operation':'update_event'}, room=sid)
+
+
+
+@sio.event
 def disconnect_request(sid):
     sio.disconnect(sid)
 
