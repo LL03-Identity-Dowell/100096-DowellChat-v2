@@ -656,15 +656,17 @@ def get_server_events(sid, message):
         response = data_cube.fetch_data(db_name="dowellchat", coll_name="events", filters={"server": server_id}, limit=199, offset=0)
         if response['success']:
             if not response['data']:
-                return sio.emit('event_response', {'data': 'No Event found for this Server', 'status': 'failure', 'operation':'get_server_events'}, room=sid)
+                return emit_response(sid, "event_response", "No Event found for this Server", "failure", "get_server_events")
+
             else:
-                return sio.emit('event_response', {'data': response['data'], 'status': 'success', 'operation':'get_server_events'}, room=sid)
+                return emit_response(sid, "event_response", response['data'], "success", "get_server_events")
+
         else:
-            return sio.emit('event_response', {'data': response['message'], 'status': 'failure', 'operation':'get_server_events'}, room=sid)
+            return emit_response(sid, "event_response", response['message'], "failure", "get_server_events")
 
     except Exception as e:
         error_message = str(e)
-        return sio.emit('event_response', {'data': error_message, 'status': 'failure', 'operation':'get_server_events'}, room=sid)
+        return emit_response(sid, "event_response", error_message, "failure", "get_server_events")
 
 @sio.event
 def get_event_details(sid, message):
@@ -673,15 +675,15 @@ def get_event_details(sid, message):
         response = data_cube.fetch_data(db_name="dowellchat", coll_name="events", filters={"_id": event_id}, limit=199, offset=0)
         if response['success']:
             if not response['data']:
-                return sio.emit('event_response', {'data': 'No Event found', 'status': 'failure', 'operation':'get_event_details'}, room=sid)
+                return emit_response(sid, "event_response", "No Event found", "failure", "get_event_details")
             else:
-                return sio.emit('event_response', {'data': response['data'], 'status': 'success', 'operation':'get_event_details'}, room=sid)
+                return emit_response(sid, "event_response", response['data'], "success", "get_event_details")
         else:
-            return sio.emit('event_response', {'data': response['message'], 'status': 'failure', 'operation':'get_event_details'}, room=sid)
+            return emit_response(sid, "event_response", response['message'], "failure", "get_event_events")
 
     except Exception as e:
         error_message = str(e)
-        return sio.emit('event_response', {'data': error_message, 'status': 'failure', 'operation':'get_event_details'}, room=sid)
+        return emit_response(sid, "event_response", error_message, "failure", "get_event_events")
 
 @sio.event
 def update_event(sid, message):
@@ -704,13 +706,13 @@ def update_event(sid, message):
         response = data_cube.update_data(db_name="dowellchat", coll_name="events", query = {"_id": event_id}, update_data=update_data)     
         print(response)
         if response['success'] == True:
-            return sio.emit('event_response', {'data':"Event Updated Successfully", 'status': 'success', 'operation':'update_event'}, room=sid)
+            return emit_response(sid, "event_response", "Event Updated Successfully", "success", "update_event")
         else:
-            return sio.emit('event_response', {'data':"Error updating Event", 'status': 'failure', 'operation':'update_event'}, room=sid)
+            return emit_response(sid, "event_response", "Error updating event", 'failure', 'update_event')
     except Exception as e:
         # Handle other exceptions
         error_message = str(e)
-        return sio.emit('event_response', {'data': error_message, 'status': 'failure', 'operation':'update_event'}, room=sid)
+        return emit_response(sid, "event_response", error_message, "failure", "update_events")
 
 
 
