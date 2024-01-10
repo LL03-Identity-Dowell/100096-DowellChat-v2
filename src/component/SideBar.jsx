@@ -6,41 +6,37 @@ import { useEffect, useState } from "react";
 import { USER_ID, socketInstance } from "../services/core-providers-di";
 import { useSelector } from "react-redux";
 import ProfileAvatar from "./common/ProfileAvatar";
+import { getUserServers, watchServers } from "../services/serverRepository";
+import ServerButtonsShimmer from "./chat/loading/ServersLoading";
+
 
 const SideBar = ({ isOpen, setIsOpen }) => {
-  const [servers, setServers] = useState([]);
-  const [activeBorder, setActiveBorder] = useState(0);
+  const {servers, isLoading, isError, error} = useSelector((state) => state.servers)
+  const [serverChannels, setServerChannels] = useState([]);
+  const [activeBorder, setActiveBorder] = useState(-1);
   const isConnected  = useSelector((state) => state.socket.isConnected)
-  const chatUsers = [
-    {
-      src: logo,
-      desc1: "47535785834",
-      desc2: "cb1be95",
-      desc3: "WORKFLOWAI",
-    },
-    {
-      src: logo,
-      desc1: "47535785834",
-      desc2: "cb1be95",
-      desc3: "WORKFLOWAI",
-    },
-  ];
 
   useEffect(() => {
     if(isConnected) {
-      socketInstance.emit('get_user_servers',{
-        user_id: USER_ID
-      })
+      getUserServers()
     }
   }, [isConnected]);
 
-  socketInstance.on('server_response', (data) => {
+
+  const handleServerClick = (serverId, index) => {
+    setActiveBorder(index)
+    socketInstance.emit('get_server_channels', { server_id: serverId});
+  }
+
+  socketInstance.on('channel_response', (data) => {
     if(data.status === 'success'){
-      setServers(data.data);
+      setServerChannels(data.data);
     }else {
-      setServers([])
+      setServerChannels([])
     }
   })
+
+  console.log("isLoading", isLoading)
 
   return (
     <div className="flex">
@@ -62,40 +58,23 @@ const SideBar = ({ isOpen, setIsOpen }) => {
         </div>
 
           {
-            servers?.map(({name, id}, index) => (
-              <div key={index}>
-                <div className="relative h-[40px]" key={index} onClick={() => setActiveBorder(index)}>
-                  <ProfileAvatar fullName={name} />
-                  {activeBorder === index && (
-                    <p className=" w-[6px] h-[80%] bg-green-500 absolute left-[-15px] rounded-r-[100px]  top-[2px]"></p>
-                  )}
-                  {activeBorder === index && (
-                    <p className=" w-full h-[2px] bg-[#94a3b8] absolute left-0 rounded-r-[100px]  bottom-[-7px]"></p>
-                  )}
-                </div>
-              </div>
-            ))
+            isLoading ? (
+                <ServerButtonsShimmer />
+            ) : (
+                servers?.map(({name, id}, index) => (
+                  <button className="relative h-[40px]" id={id} key={index} onClick={() => handleServerClick(id, index)}>
+                    <ProfileAvatar fullName={name} />
+                    {activeBorder === index && (
+                      <p className=" w-[6px] h-[80%] bg-green-500 absolute left-[-15px] rounded-r-[100px]  top-[2px]"></p>
+                    )}
+                    {activeBorder === index && (
+                      <p className=" w-full h-[2px] bg-[#94a3b8] absolute left-0 rounded-r-[100px]  bottom-[-7px]"></p>
+                    )}
+                  </button>
+                ))
+            )
           }
 
-{/* 
-        {
-          servers.map(server, index) => ( )}
-            <div className="relative h-[40px]" key={index}>
-              <img
-                onClick={() => setActiveBorder(index)}
-                src={Element}
-                alt={`Logo ${index}`}
-                className={`cursor-pointer w-10 h-10 rounded-full `}
-              />
-              {activeBorder === index && (
-                <p className=" w-[6px] h-[80%] bg-green-500 absolute left-[-15px] rounded-r-[100px]  top-[2px]"></p>
-              )}
-              {activeBorder === index && (
-                <p className=" w-full h-[2px] bg-[#94a3b8] absolute left-0 rounded-r-[100px]  bottom-[-7px]"></p>
-              )}
-            </div>
-          )
-        ) */}
       </div>
 
       {isOpen && (
@@ -111,18 +90,17 @@ const SideBar = ({ isOpen, setIsOpen }) => {
             <FontAwesomeIcon icon={faSearch} className="text-gray-400 pr-1" />
           </div>
 
-          {chatUsers.map((item, index) => (
+          {serverChannels.map((item, index) => (
             <button className="flex gap-3 items-center mb-2" key={index} onClick={() => setIsOpen(false)}>
               <img
                 src="avatar.jpg"
                 className="w-10 h-10 rounded-full mb-4 bg-yellow-500"
                 alt={`User ${index}`}
               />
-
-              <div>
-                <p className="text-sm font-semibold">{item?.desc1} </p>
-                <p className="text-sm font-semibold my-0.5">{item?.desc2} </p>
-                <p className="text-xs font-semibold">{item?.desc3} </p>
+              <div className="text-left">
+                <p className="text-sm font-semibold">{item} </p>
+                <p className="text-sm font-semibold my-0.5">cb1be95</p>
+                <p className="text-xs font-semibold">WORKFLOWAI </p>
               </div>
             </button>
           ))}
