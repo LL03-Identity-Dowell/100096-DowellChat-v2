@@ -37,30 +37,7 @@ def background_thread():
         count += 1
         sio.emit('my_response', {'data': 'Server generated event'},
                  namespace='/test')
-@sio.event
-def join_channel_chat(sid, message):
-    user_id = message['user_id']
 
-    # Check if the user is connected
-    if sid:
-        response = data_cube.fetch_data(db_name="dowellchat", coll_name="channel", filters={"member_list": {"$in": [user_id]}}, limit=199, offset=0)
-
-        if response['success']:
-            for channel in response['data']:
-                room_name = str(channel['_id'])
-
-                # Make the user join the room
-                sio.enter_room(sid, room_name)
-                # sio.emit('joined_room', {'room_name': f"{sid} joined room {room_name}"}, room=sid)
-                
-    # sio.enter_room(sid, room)
-    # messages = Message.objects.filter(room_id=message['room']).all()
-    # sio.emit('my_response', {'data': f"{sid} Joined the Room",  'count': 0}, room=room, skip_sid=sid)
-    # if messages.count()==0:
-    #     sio.emit('my_response', {'data': "Hey how may i help you",  'count': 0}, room=sid)
-    # else:
-    #     for i in messages:
-    #         sio.emit('my_response', {'data': str(i.message_data),  'count': 0}, room=sid)
 
 @sio.event
 def leave(sid, message):
@@ -781,6 +758,51 @@ def answerCall(sid, data):
 def endCall(sid):
     sio.emit('callEnded')
 
+
+"""CHANNEL CHAT SECTION"""
+@sio.event
+def join_channel_chat(sid, message):
+    user_id = message['user_id']
+
+    # Check if the user is connected
+    if sid:
+        response = data_cube.fetch_data(db_name="dowellchat", coll_name="channel", filters={"member_list": {"$in": [user_id]}}, limit=199, offset=0)
+
+        if response['success']:
+            for channel in response['data']:
+                room_name = str(channel['_id'])
+
+                # Make the user join the room
+                sio.enter_room(sid, room_name)
+                # sio.emit('joined_room', {'room_name': f"{sid} joined room {room_name}"}, room=sid)
+                
+    # sio.enter_room(sid, room)
+    # messages = Message.objects.filter(room_id=message['room']).all()
+    # sio.emit('my_response', {'data': f"{sid} Joined the Room",  'count': 0}, room=room, skip_sid=sid)
+    # if messages.count()==0:
+    #     sio.emit('my_response', {'data': "Hey how may i help you",  'count': 0}, room=sid)
+    # else:
+    #     for i in messages:
+    #         sio.emit('my_response', {'data': str(i.message_data),  'count': 0}, room=sid)
+                
+@sio.event
+def channel_chat(sid, message):
+    try:
+        channel_id = message['channel_id']
+        response = data_cube.fetch_data(db_name="dowellchat", coll_name="chat", filters={"channel_id": channel_id}, limit=100, offset=0)
+        
+        if response['success']:
+            if response['data']:
+                return sio.emit('channel_chat_response', {'data': response['data'], 'status': 'success'}, room=sid)
+            else:
+                return sio.emit('channel_chat_response', {'data': "This is the beginning of this channel", 'status': 'success'}, room=sid)
+        else:
+            return sio.emit('channel_chat_response', {'data': "This is the beginning of this channel", 'status': 'success', }, room=sid)
+            
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('channel_chat_response', {'data': error_message, 'status': 'failure'}, room=channel_id)
 
 
 """PUBLIC RELEASE"""
