@@ -21,21 +21,3 @@ export function watchServers () {
 }
 
 
-
-
-
-
-// function fetchChat () {
-//  socket.emit('getchats')
-//  // deserilize and return
- 
-//}
-
-
-
-// function watchChat (callback) {
-
-// data = socket.on('chatchange', )
-// deserilize and return
-// callback(data)
-//}

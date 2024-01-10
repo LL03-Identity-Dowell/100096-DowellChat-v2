@@ -18,12 +18,15 @@ export const serversSlice = createSlice({
             if (data.status == 'success') {
                 state.isLoading = false;
                 state.success = true;
+                state.isError = false;
                 state.servers = data.data;
+                state.error = '';
             } else {
                 state.isLoading = false;
                 state.isError = true;
                 state.error = data.data;
                 state.servers = []
+                state.success = false;
             }
         },
         setLoading(state, action) {
