@@ -8,11 +8,16 @@ import { useSelector } from "react-redux";
 import ProfileAvatar from "./common/ProfileAvatar";
 import { getUserServers, watchServers } from "../services/serverRepository";
 import ServerButtonsShimmer from "./chat/loading/ServersLoading";
+import { getServerChannels } from "../services/channelRepository";
+import ChannelsLoading from "./chat/loading/ChannelsLoading";
 
 
 const SideBar = ({ isOpen, setIsOpen }) => {
   const {servers, isLoading, isError, error} = useSelector((state) => state.servers)
-  const [serverChannels, setServerChannels] = useState([]);
+  const serverChannels = useSelector((state) => {
+      const serverId = state.channels.server_id;
+      return state.channels[serverId];
+  })
   const [activeBorder, setActiveBorder] = useState(-1);
   const isConnected  = useSelector((state) => state.socket.isConnected)
 
@@ -22,21 +27,10 @@ const SideBar = ({ isOpen, setIsOpen }) => {
     }
   }, [isConnected]);
 
-
   const handleServerClick = (serverId, index) => {
     setActiveBorder(index)
-    socketInstance.emit('get_server_channels', { server_id: serverId});
+    getServerChannels(serverId);
   }
-
-  socketInstance.on('channel_response', (data) => {
-    if(data.status === 'success'){
-      setServerChannels(data.data);
-    }else {
-      setServerChannels([])
-    }
-  })
-
-  console.log("isLoading", isLoading)
 
   return (
     <div className="flex">
@@ -89,21 +83,32 @@ const SideBar = ({ isOpen, setIsOpen }) => {
 
             <FontAwesomeIcon icon={faSearch} className="text-gray-400 pr-1" />
           </div>
-
-          {serverChannels.map((item, index) => (
-            <button className="flex gap-3 items-center mb-2" key={index} onClick={() => setIsOpen(false)}>
-              <img
-                src="avatar.jpg"
-                className="w-10 h-10 rounded-full mb-4 bg-yellow-500"
-                alt={`User ${index}`}
-              />
-              <div className="text-left">
-                <p className="text-sm font-semibold">{item} </p>
-                <p className="text-sm font-semibold my-0.5">cb1be95</p>
-                <p className="text-xs font-semibold">WORKFLOWAI </p>
-              </div>
-            </button>
-          ))}
+          {
+            serverChannels?.isLoading ? (
+              <ChannelsLoading />
+            ) : serverChannels?.isError ? (
+              <p>{serverChannels?.error}</p>
+            ) : (
+              serverChannels?.channels?.map((item, index) => (
+                <button
+                  className="flex gap-3 items-center mb-2"
+                  key={index}
+                  onClick={() => setIsOpen(false)}
+                >
+                  <img
+                    src="avatar.jpg"
+                    className="w-10 h-10 rounded-full mb-4 bg-yellow-500"
+                    alt={`User ${index}`}
+                  />
+                  <div className="text-left">
+                    <p className="text-sm font-semibold">{item} </p>
+                    <p className="text-sm font-semibold my-0.5">cb1be95</p>
+                    <p className="text-xs font-semibold">WORKFLOWAI </p>
+                  </div>
+                </button>
+              ))
+            )
+          }
         </div>
       )}
     </div>
