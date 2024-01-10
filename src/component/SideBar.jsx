@@ -1,12 +1,16 @@
 import logo from "/logo.jpg";
 import { FaMessage } from "react-icons/fa6";
-import { faSearch } from "@fortawesome/free-solid-svg-icons";
+import { faL, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { USER_ID, socketInstance } from "../services/core-providers-di";
+import { useSelector } from "react-redux";
+import ProfileAvatar from "./common/ProfileAvatar";
 
 const SideBar = ({ isOpen, setIsOpen }) => {
+  const [servers, setServers] = useState([]);
   const [activeBorder, setActiveBorder] = useState(0);
-  const imageSources = [FaMessage, logo, logo, logo, logo, logo, logo]; // Array of image sources
+  const isConnected  = useSelector((state) => state.socket.isConnected)
   const chatUsers = [
     {
       src: logo,
@@ -22,35 +26,63 @@ const SideBar = ({ isOpen, setIsOpen }) => {
     },
   ];
 
-  // ===========All Event Handlers=======
-  const isActiveImg = (index) => {
-    setActiveBorder(index);
-  };
+  useEffect(() => {
+    if(isConnected) {
+      socketInstance.emit('get_user_servers',{
+        user_id: USER_ID
+      })
+    }
+  }, [isConnected]);
+
+  socketInstance.on('server_response', (data) => {
+    if(data.status === 'success'){
+      setServers(data.data);
+    }else {
+      setServers([])
+    }
+  })
+
   return (
     <div className="flex">
       <div className=" top-0 left-0 h-screen py-4  flex flex-col gap-4 px-[15px] items-center z-50">
         <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-500"></div>
 
-        {imageSources.map((Element, index) =>
-          typeof Element === "function" ? (
-            <div key={index} className="relative h-[40px]">
-              <Element
-                onClick={() => isActiveImg(index)}
+        <div className="relative h-[40px]">
+              <FaMessage
+                onClick={() => setActiveBorder(-1)}
                 className={`cursor-pointer w-10 text-green-500 rounded-md  h-10 `}
               />
-
-              {activeBorder === index && (
+              {activeBorder === -1 && (
                 <p className="cursor-pointer w-[6px] h-[80%] bg-green-500 absolute left-[-15px] rounded-r-[100px]  top-[2px]"></p>
               )}
 
-              {activeBorder === index && (
+              {activeBorder === -1 && (
                 <p className="cursor-pointer w-full h-[2px] bg-[#94a3b8] absolute left-0 rounded-r-[100px]  bottom-[-7px]"></p>
               )}
-            </div>
-          ) : (
+        </div>
+
+          {
+            servers?.map(({name, id}, index) => (
+              <div key={index}>
+                <div className="relative h-[40px]" key={index} onClick={() => setActiveBorder(index)}>
+                  <ProfileAvatar fullName={name} />
+                  {activeBorder === index && (
+                    <p className=" w-[6px] h-[80%] bg-green-500 absolute left-[-15px] rounded-r-[100px]  top-[2px]"></p>
+                  )}
+                  {activeBorder === index && (
+                    <p className=" w-full h-[2px] bg-[#94a3b8] absolute left-0 rounded-r-[100px]  bottom-[-7px]"></p>
+                  )}
+                </div>
+              </div>
+            ))
+          }
+
+{/* 
+        {
+          servers.map(server, index) => ( )}
             <div className="relative h-[40px]" key={index}>
               <img
-                onClick={() => isActiveImg(index)}
+                onClick={() => setActiveBorder(index)}
                 src={Element}
                 alt={`Logo ${index}`}
                 className={`cursor-pointer w-10 h-10 rounded-full `}
@@ -63,8 +95,7 @@ const SideBar = ({ isOpen, setIsOpen }) => {
               )}
             </div>
           )
-        )}
-        {/* Your SideBarUpdated content */}
+        ) */}
       </div>
 
       {isOpen && (
