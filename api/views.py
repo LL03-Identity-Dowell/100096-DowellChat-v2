@@ -712,8 +712,27 @@ def update_event(sid, message):
     except Exception as e:
         # Handle other exceptions
         error_message = str(e)
-        return emit_response(sid, "event_response", error_message, "failure", "update_events")
+        return emit_response(sid, "event_response", error_message, "failure", "update_event")
 
+
+@sio.event
+def cancel_event(sid, message):
+    try:
+        event_id = message['event_id']
+        response = data_cube.delete_data(db_name="dowellchat", coll_name="events", query={"_id": event_id})
+
+        if response['success']:
+            if response['message']:
+                return emit_response(sid, "event_response", "Event Cancelled Successfully", "success", "cancel_event")
+            else:
+                return emit_response(sid, "event_response", "No data found for this query", "failure", "cancel_event")
+        else:
+            return emit_response(sid, "event_response", response['message'], "failure", "cancel_event")
+            
+
+    except Exception as e:
+        error_message = str(e)
+        return emit_response(sid, "event_response", error_message, "failure", "cancel_event")
 
 
 @sio.event
