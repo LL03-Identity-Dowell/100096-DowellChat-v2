@@ -3,13 +3,13 @@ import { FaMessage } from "react-icons/fa6";
 import { faL, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useState } from "react";
-import { USER_ID, socketInstance } from "../services/core-providers-di";
+import { USER_ID, socketInstance } from "../../services/core-providers-di";
 import { useSelector } from "react-redux";
-import ProfileAvatar from "./common/ProfileAvatar";
-import { getUserServers, watchServers } from "../services/serverRepository";
-import ServerButtonsShimmer from "./chat/loading/ServersLoading";
-import { getServerChannels } from "../services/channelRepository";
-import ChannelsLoading from "./chat/loading/ChannelsLoading";
+import ProfileAvatar from "../common/ProfileAvatar";
+import { getUserServers, watchServers } from "../../services/serverRepository";
+import ServerButtonsShimmer from "./loading/ServersLoading";
+import { getServerChannels } from "../../services/channelRepository";
+import ChannelsLoading from "./loading/ChannelsLoading";
 
 
 const SideBar = ({ isOpen, setIsOpen }) => {

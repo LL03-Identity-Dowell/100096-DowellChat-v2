@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { MdVideoCall } from "react-icons/md";
 import { IoCall, IoMenuSharp } from "react-icons/io5";
 import ChatMessage from "./ChatMessage";
-import dummyImage from "../assets/dummy-image-green.jpg";
+import dummyImage from "../../assets/dummy-image-green.jpg";
 import { FaEllipsisVertical } from "react-icons/fa6";
 import { IoMdSend } from "react-icons/io";
 import { MdOutlineMenuOpen, MdOutlineAttachFile } from "react-icons/md";
@@ -58,6 +58,7 @@ const ChatSection = ({ isOpen, setIsOpen, handleSideBarToggle }) => {
         scrollContainerRef.current.scrollHeight;
     }
   }, [messages]);
+  
 
   return (
     <div className={`ml-3 flex flex-col max-h-screen w-full ${isOpen && 'hidden md:flex'}`}>
