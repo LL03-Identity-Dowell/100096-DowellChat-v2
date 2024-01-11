@@ -122,4 +122,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+#MEDIA
+MEDIA_URL = 'media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
 API_KEY = os.getenv("API_KEY")

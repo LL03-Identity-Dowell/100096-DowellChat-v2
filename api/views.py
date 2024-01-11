@@ -1,17 +1,25 @@
+import base64
+import datetime
+import secrets
 import time
 import json
+import random
+import string
+from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 # async_mode = 'gevent'
 async_mode = "threading"
-from .models import Room, Message
-from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
+from .models import Message
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 from .serializers import MessageSerializer
 from .utils import processApiService, DataCubeConnection
-#Socket imports
 import os
 from django.http import HttpResponse
 import socketio
+
+
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
 app = socketio.WSGIApp(sio)
 thread = None
@@ -51,38 +59,6 @@ def close_room(sid, message):
              {'data': 'Room ' + message['room'] + ' is closing.'},
              room=message['room'])
     sio.close_room(message['room'])
-
-@sio.event
-def message_event(sid, message):
-    type = message['type']
-    room_id = message['room_id']
-    message_data = message['message_data']
-    side = message['side']
-    author = message['author']
-    message_type = message['message_type']
-
-    data = {
-        "type": type,
-        "room_id": room_id,
-        "message_data": message_data,
-        "side": side,
-        "author": author,
-        "message_type": message_type,
-    }
-    serializer = MessageSerializer(data=data)
-    if serializer.is_valid():
-
-        Message.objects.create(
-            type = type,
-            room_id = room_id,
-            message_data = message_data,
-            side = side,
-            author = author,
-            message_type = message_type
-        )
-        return sio.emit('my_response', {'data': message['message_data'], 'sid':sid},  room=message['room_id'])
-    else:
-        return sio.emit('my_response', {'data': 'Invalid Data', 'sid':sid}, room=message['room'])
 
 
 """SERVER EVENT SECTION"""
@@ -803,6 +779,84 @@ def channel_chat(sid, message):
     except Exception as e:
         error_message = str(e)
         return sio.emit('channel_chat_response', {'data': error_message, 'status': 'failure'}, room=channel_id)
+
+
+@sio.event
+def channel_message_event(sid, message):
+    try:
+        channel_id = message['channel_id']
+        message_data = message['message_data']
+        user_id = message['user_id']
+        name = message['name']
+        # audio = message['audio']
+        # video = message['video']
+        # document = message['document']
+        reply_to = message['reply_to']
+        created_at = message['created_at']
+
+
+        # data_folder = os.path.join(settings.BASE_DIR, 'media', 'data')
+        # if not os.path.exists(data_folder):
+        #     os.makedirs(data_folder)
+
+        # def save_file(file_data, file_type):
+        #     if file_data:
+        #         # Decode the base64 data
+        #         file_data_decoded = base64.b64decode(file_data.split(',')[1])
+
+        #         # Generate a unique filename
+        #         file_extension = file_data.split('/')[-1].split('.')[-1]
+        #         file_name = f"{user_id}_{''.join(random.choice(string.ascii_lowercase + string.digits) for i in range(12))}.{file_extension}"
+
+        #         # Specify the file path within the media directory
+        #         file_path = os.path.join(settings.MEDIA_ROOT, file_type, file_name)
+
+        #         # Save the file using Django's default storage
+        #         with default_storage.open(file_path, 'wb') as file:
+        #             file.write(file_data_decoded)
+
+        #         # Return the URL
+        #         file_url = default_storage.url(file_path)
+        #         return file_url
+
+        #     return None
+
+        
+        # audio_url = save_file(audio, 'audio')
+        # video_url = save_file(video, 'video') 
+        # document_url = save_file(document, 'document')
+        
+        data = {
+                    "channel_id": channel_id,
+                    "message_data": message_data,
+                    "author": {
+                        "user_id": user_id,
+                        "name": name
+                    },
+                    # "audio": audio_url,
+                    # "video": video_url,
+                    # "document": document_url,
+                    "reply_to": reply_to,        
+                    "created_at": created_at, 
+            }
+
+        response = data_cube.insert_data(db_name="dowellchat", coll_name="chat", data=data)
+        
+        if response['success'] == True:
+            return sio.emit('channel_chat_response', {'data':data, 'status': 'success'}, room=sid)
+        else:
+            return sio.emit('channel_chat_response', {'data':"Error sending message", 'status': 'failure'}, room=sid)
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('channel_chat_response', {'data': error_message, 'status': 'failure'}, room=sid)
+
+
+
+
+
+
+
+
 
 
 """PUBLIC RELEASE"""
