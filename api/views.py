@@ -131,7 +131,7 @@ def create_server(sid, message):
             response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
 
             if response['success'] == True:
-                return sio.emit('server_response', {'data':response['message'], 'status': 'success', 'operation':'create_server'}, room=sid)
+                return sio.emit('server_response', {'data':response['data'], 'status': 'success', 'operation':'create_server'}, room=sid)
             else:
                 return sio.emit('server_response', {'data':response['message'], 'status': 'failure', 'operation':'create_server'}, room=sid)
     except Exception as e:
@@ -915,6 +915,13 @@ def cs_create_category(sid, message):
         private = message['private']
         created_at = message['created_at']
 
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_category"
+
         data = {
                 "name": name,
                 "rooms": rooms,
@@ -923,18 +930,21 @@ def cs_create_category(sid, message):
                 "private": private,        
                 "created_at": created_at, 
         }
-        is_server = data_cube.fetch_data(db_name="customer_support", coll_name="server", filters={"_id": server}, limit=1, offset=0)
+
+        is_server = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=f"{workspace_id}_server", filters={"_id": server}, limit=1, offset=0)
 
         if is_server['data'] ==[]:
             return sio.emit('category_response', {'data': 'Server not found', 'status': 'failure', 'operation':'create_category'}, room=sid)
+
+        if check_collection(workspace_id, "category"):
+                
+            response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
             
-        response = data_cube.insert_data(db_name="customer_support", coll_name="category", data=data)
-        
-        if response['success'] == True:
-            return sio.emit('category_response', {'data':response['data'], 'status': 'success', 'operation':'create_category'}, room=sid)
-        
-        else:
-            return sio.emit('category_response', {'data':"Error creating Category", 'status': 'failure', 'operation':'create_category'}, room=sid)
+            if response['success'] == True:
+                return sio.emit('category_response', {'data':response['data'], 'status': 'success', 'operation':'create_category'}, room=sid)
+            
+            else:
+                return sio.emit('category_response', {'data':"Error creating Category", 'status': 'failure', 'operation':'create_category'}, room=sid)
     except Exception as e:
         # Handle other exceptions
         error_message = str(e)
@@ -945,15 +955,23 @@ def cs_create_category(sid, message):
 def cs_get_server_category(sid, message):
     try:
         server_id = message['server_id']
-        response = data_cube.fetch_data(db_name="customer_support", coll_name="category", filters={"server_id": server_id}, limit=199, offset=0)
-        if response['success']:
-            if not response['data']:
-                return sio.emit('category_response', {'data': 'No Category found for this Server', 'status': 'failure', 'operation':'get_server_category'}, room=sid)
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
 
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_category"
+
+        if check_collection(workspace_id, "category"):
+            response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"server_id": server_id}, limit=199, offset=0)
+            if response['success']:
+                if not response['data']:
+                    return sio.emit('category_response', {'data': 'No Category found for this Server', 'status': 'failure', 'operation':'get_server_category'}, room=sid)
+
+                else:
+                    return sio.emit('category_response', {'data': response['data'], 'status': 'success', 'operation':'get_server_category'}, room=sid)
             else:
-                return sio.emit('category_response', {'data': response['data'], 'status': 'success', 'operation':'get_server_category'}, room=sid)
-        else:
-            return sio.emit('category_response', {'data': response['message'], 'status': 'failure', 'operation':'get_server_category'}, room=sid)
+                return sio.emit('category_response', {'data': response['message'], 'status': 'failure', 'operation':'get_server_category'}, room=sid)
 
     except Exception as e:
         error_message = str(e)
@@ -963,14 +981,21 @@ def cs_get_server_category(sid, message):
 @sio.event
 def cs_get_user_category(sid, message):
     try:
-        
         server_id = message['server_id']
-        user_id = message['user_id']        
+        user_id = message['user_id']
+
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_category"       
         
          # Query based on owner
         response_owner = data_cube.fetch_data(
-            db_name="customer_support",
-            coll_name="server",
+            api_key=api_key,
+            db_name=db_name,
+            coll_name=f"{workspace_id}_server",
             filters={"owner": user_id},
             limit=1,
             offset=0
@@ -978,41 +1003,44 @@ def cs_get_user_category(sid, message):
 
         # Query based on _id
         response_id = data_cube.fetch_data(
-            db_name="customer_support",
-            coll_name="server",
+            api_key=api_key,
+            db_name=db_name,
+            coll_name=f"{workspace_id}_server",
             filters={"_id": server_id},
             limit=1,
             offset=0
         )
         
         if response_owner['success'] and response_owner['data'] and response_id['success'] and response_id['data']:
+            if check_collection(workspace_id, "category"):
+                new_response = data_cube.fetch_data(
+                    api_key=api_key,
+                    db_name=db_name,
+                    coll_name=coll_name, 
+                    filters={"server_id": server_id}, 
+                    limit=199, 
+                    offset=0
+                )
 
+                if new_response['success']:
+                    if new_response['data']:
+                        return sio.emit('category_response', {'data': new_response['data'], 'status': 'success', 'operation':'get_user_category'}, room=sid)
+        if check_collection(workspace_id, "category"):
             new_response = data_cube.fetch_data(
-                db_name="customer_support", 
-                coll_name="category", 
-                filters={"server_id": server_id}, 
+                api_key=api_key,
+                db_name=db_name,
+                coll_name=coll_name, 
+                filters={"$and": [{"server_id": server_id}, {"member_list": {"$in": [user_id]}}]},  
                 limit=199, 
                 offset=0
-            )
-
+                )
             if new_response['success']:
-                if new_response['data']:
-                    return sio.emit('category_response', {'data': new_response['data'], 'status': 'success', 'operation':'get_user_category'}, room=sid)
-        
-        new_response = data_cube.fetch_data(
-            db_name="customer_support", 
-            coll_name="category", 
-            filters={"$and": [{"server_id": server_id}, {"member_list": {"$in": [user_id]}}]},  
-            limit=199, 
-            offset=0
-            )
-        if new_response['success']:
-                if new_response['data']:
-                    return sio.emit('category_response', {'data': new_response['data'], 'status': 'success', 'operation':'get_user_category'}, room=sid)
-        else:
-            return sio.emit('category_response', {'data': new_response['message'], 'status': 'failure', 'operation':'get_user_category'}, room=sid)
+                    if new_response['data']:
+                        return sio.emit('category_response', {'data': new_response['data'], 'status': 'success', 'operation':'get_user_category'}, room=sid)
+            else:
+                return sio.emit('category_response', {'data': new_response['message'], 'status': 'failure', 'operation':'get_user_category'}, room=sid)
 
-        return sio.emit('category_response', {'data': "No category found", 'status': 'failure', 'operation':'get_user_category'}, room=sid)
+            return sio.emit('category_response', {'data': "No category found", 'status': 'failure', 'operation':'get_user_category'}, room=sid)
     
     except Exception as e:
         error_message = str(e)
@@ -1027,12 +1055,20 @@ def cs_update_category(sid, message):
         name = message['name']
         private = message['private'] 
 
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_category"       
+
+
         update_data = {
                 "name": name,
                 "private": private,
         }
 
-        response = data_cube.update_data(db_name="customer_support", coll_name="category", query = {"_id": category_id}, update_data=update_data)     
+        response = data_cube.update_data(api_key=api_key, db_name=db_name, coll_name=coll_name, query = {"_id": category_id}, update_data=update_data)     
         
         if response['success'] == True:
             return sio.emit('category_response', {'data':"Category Updated Successfully", 'status': 'success', 'operation':'update_category'}, room=sid)
@@ -1048,7 +1084,14 @@ def cs_update_category(sid, message):
 def cs_delete_category(sid, message):
     try:
         category_id = message['category_id']
-        response = data_cube.delete_data(db_name="customer_support", coll_name="category", query={"_id": category_id})
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_category"
+
+        response = data_cube.delete_data(api_key=api_key, db_name=db_name, coll_name=coll_name, query={"_id": category_id})
 
         if response['success']:
             if response['message']:
@@ -1068,7 +1111,14 @@ def cs_add_category_member(sid, message):
         category_id = message['category_id']
         user_id = message['user_id']
 
-        is_category = data_cube.fetch_data(db_name="customer_support", coll_name="category", filters={"_id": category_id}, limit=1, offset=0)
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_category"
+
+        is_category = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=coll_name, filters={"_id": category_id}, limit=1, offset=0)
 
         if not is_category['data']:
             return sio.emit('category_response', {'data': 'Category not found', 'status': 'failure', 'operation': 'add_category_member'}, room=sid)
@@ -1086,7 +1136,7 @@ def cs_add_category_member(sid, message):
         }
         print(updated_member_list)
 
-        response = data_cube.update_data(db_name="customer_support", coll_name="channel", query={"_id": category_id}, update_data=update_data)
+        response = data_cube.update_data(api_key=api_key,db_name=db_name, coll_name=coll_name, query={"_id": category_id}, update_data=update_data)
 
         if response['success']:
             return sio.emit('category_response', {'data': "User added Successfully", 'status': 'success', 'operation': 'add_category_member'}, room=sid)
@@ -1096,6 +1146,43 @@ def cs_add_category_member(sid, message):
     except Exception as e:
         error_message = str(e)
         return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation': 'add_category_member'}, room=sid)
+
+@sio.event
+def cs_delete_category_member(sid, message):
+    try:
+        category_id = message['category_id']
+        user_id = message['user_id']
+
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_category"
+
+        is_category = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=coll_name, filters={"_id": category_id}, limit=1, offset=0)
+
+        if not is_category['data']:
+            return sio.emit('category_response', {'data': 'Category not found', 'status': 'failure', 'operation': 'delete_category_member'}, room=sid)
+
+        existing_member_list = is_category['data'][0].get('member_list', [])
+        updated_member_list = [member for member in existing_member_list if member != user_id]
+
+        update_data = {
+            "member_list": updated_member_list,
+        }
+
+        response = data_cube.update_data(api_key=api_key, db_name=db_name, coll_name=coll_name, query={"_id": category_id}, update_data=update_data)
+
+        if response['success']:
+            return sio.emit('category_response', {'data': "User Removed Successfully", 'status': 'success', 'operation': 'delete_category_member'}, room=sid)
+        else:
+            return sio.emit('category_response', {'data': "Error removing user from Channel", 'status': 'failure', 'operation': 'delete_category_member'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation': 'delete_category_member'}, room=sid)
+
 
 # @sio.event
 # def create_room(sid, message):
