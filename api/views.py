@@ -1264,7 +1264,41 @@ def create_public_room(sid, message):
         error_message = str(e)
         return sio.emit('public_room_response', {'data': error_message, 'status': 'failure', 'operation':'create_public_room'}, room=sid)
 
-    
+@sio.event
+def public_join_room(sid, message):
+    try:
+        room = message['room_id']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_public_room"
+        response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"_id": room}, limit=1, offset=0)
+        if response['success']:
+            if not response['data']:
+                return sio.emit('public_room_response', {'data': 'No Room found ', 'status': 'failure', 'operation':'join_public_room'}, room=sid)
+            else:
+                room_name = response['data'][0].get('name', '')
+                print(room_name)
+                sio.enter_room(sid, room_name)
+                sio.emit('public_message_response', {'data': "Welcome to the new chat", 'status': 'success', 'operation': 'send_message'}, room=sid)    
+                return
+
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('public_room_response', {'data': error_message, 'status': 'failure', 'operation':'join_public_room'}, room=sid)
+
+    # messages = Message.objects.filter(room_id=message['room']).all()
+
+    # sio.emit('my_response', {'data': f"{sid} Joined the Room",  'count': 0}, room=room, skip_sid=sid)
+
+    # if messages.count()==0:
+    #     sio.emit('my_response', {'data': "Hey how may i help you",  'count': 0}, room=sid)
+    # else:
+    #     for i in messages:
+    #         sio.emit('my_response', {'data': str(i.message_data),  'count': 0}, room=sid)
 
 """PUBLIC RELEASE"""
 public_namespace = '/public'
