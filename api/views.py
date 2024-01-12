@@ -1024,7 +1024,19 @@ def cs_get_user_category(sid, message):
 
                 if new_response['success']:
                     if new_response['data']:
-                        return sio.emit('category_response', {'data': new_response['data'], 'status': 'success', 'operation':'get_user_category'}, room=sid)
+                        # Emit the category response to the customer support personnel
+                        sio.emit('category_response', {'data': new_response['data'], 'status': 'success',
+                                                       'operation': 'get_user_category'}, room=sid)
+
+                        # Join the rooms named after each category
+                        for category in new_response['data']:
+                            category_name = category.get('_id', '')
+                            if category_name:
+                                sio.enter_room(sid, category_name)
+
+                                # Add more logic here if needed for handling new category rooms
+                        return
+
         if check_collection(workspace_id, "category"):
             new_response = data_cube.fetch_data(
                 api_key=api_key,
@@ -1036,7 +1048,19 @@ def cs_get_user_category(sid, message):
                 )
             if new_response['success']:
                     if new_response['data']:
-                        return sio.emit('category_response', {'data': new_response['data'], 'status': 'success', 'operation':'get_user_category'}, room=sid)
+                         # Emit the category response to the customer support personnel
+                        sio.emit('category_response', {'data': new_response['data'], 'status': 'success',
+                                                    'operation': 'get_user_category'}, room=sid)
+
+                        # Join the rooms named after each category
+                        for category in new_response['data']:
+                            category_name = category.get('_id', '')
+                            if category_name:
+                                sio.enter_room(sid, category_name)
+
+                                # Add more logic here if needed for handling new category rooms
+                        return
+
             else:
                 return sio.emit('category_response', {'data': new_response['message'], 'status': 'failure', 'operation':'get_user_category'}, room=sid)
 
@@ -1184,45 +1208,61 @@ def cs_delete_category_member(sid, message):
         return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation': 'delete_category_member'}, room=sid)
 
 
-# @sio.event
-# def create_room(sid, message):
-#     try:
-#         name = message['public_link_id']
-#         category = message['category_id']
-#         member_list = message['member_list']
-#         created_at = message['created_at']
+@sio.event
+def create_public_room(sid, message):
+    try:
+        name = message['public_link_id']
+        category = message['category_id']
+        created_at = message['created_at']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
 
-#         data = {
-#                 "name": name,
-#                 "topic": topic,
-#                 "type": channel_type,
-#                 "private": private,
-#                 "member_list": member_list,
-#                 "server":server,        
-#                 "created_at": created_at, 
-#         }
-#         is_server = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"_id": server}, limit=1, offset=0)
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_public_room"
 
-#         if is_server['data'] ==[]:
-#             return sio.emit('channel_response', {'data': 'Server not found', 'status': 'failure', 'operation':'create_channel'}, room=sid)
+        is_category = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=f"{workspace_id}_category", filters={"_id": category}, limit=1, offset=0)
+
+        data = {
+                "name": name,
+                "category": category,        
+                "created_at": created_at, 
+        }
+        
+        if check_collection(workspace_id, "public_room"):
             
-#         response = data_cube.insert_data(db_name="dowellchat", coll_name="channel", data=data)
-        
-#         if response['success'] == True:
-#             channels = data_cube.fetch_data(db_name="dowellchat", coll_name="channel", filters={"server": server}, limit=199, offset=0)
-#             channel_list=[]
-#             for channel in channels['data']:
-#                 channel_list.append(channel['name'])
-#             sio.emit('channel_response', {'data': channel_list, 'status': 'success', 'operation':'get_server_channels'}, room=sid)    
-#             sio.enter_room(sid, name)
-#             return sio.emit('channel_response', {'data':"Channel Created Successfully", 'status': 'success', 'operation':'create_channel'}, room=sid)
-        
-#         else:
-#             return sio.emit('channel_response', {'data':"Error creating Channel", 'status': 'failure', 'operation':'create_channel'}, room=sid)
-#     except Exception as e:
-#         # Handle other exceptions
-#         error_message = str(e)
-#         return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation':'create_channel'}, room=sid)
+            response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
+            
+            if response['success'] == True:
+                sio.enter_room(sid, name)
+                sio.emit('public_message_response', {'data': "Welcome to the new chat", 'status': 'success', 'operation': 'send_message'}, room=name)
+
+                new_room_date ={
+                    'room_id': response['data']['inserted_id'], 
+                    'name': name, 
+                    'category': category}
+                sio.emit('new_public_room', {'data': new_room_date, 'status': 'success', }, room=category)
+                
+                existing_rooms = is_category['data'][0].get('rooms', [])
+                updated_rooms = existing_rooms + [response['data']['inserted_id']]
+                update_data = {
+                    "rooms": updated_rooms,
+                }
+                print(updated_rooms)
+
+                response = data_cube.update_data(api_key=api_key,db_name=db_name, coll_name=f"{workspace_id}_category", query={"_id": category}, update_data=update_data)
+
+                if response['success']:
+                    return sio.emit('public_room_response', {'data': "Public Chat Room Created Successfully", 'status': 'success', 'operation': 'create_public_room'}, room=sid)
+                else:
+                    return sio.emit('public_room_response', {'data': "Error Creating Room", 'status': 'failure', 'operation': 'create_public_room'}, room=sid)
+            
+            else:
+                return sio.emit('public_room_response', {'data':"Error Creating Room", 'status': 'failure', 'operation':'create_public_room'}, room=sid)
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('public_room_response', {'data': error_message, 'status': 'failure', 'operation':'create_public_room'}, room=sid)
 
     
 
