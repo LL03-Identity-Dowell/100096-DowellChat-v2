@@ -1,20 +1,10 @@
-import base64
-import datetime
-import secrets
-import time
-import json
-import random
-import string
-from django.conf import settings
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 # async_mode = 'gevent'
 async_mode = "threading"
 from .models import Message
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 from .serializers import MessageSerializer
-from .utils import processApiService, DataCubeConnection
+from .utils import processApiService, DataCubeConnection, create_cs_db_meta, check_db, check_collection
 import os
 from django.http import HttpResponse
 import socketio
@@ -27,7 +17,7 @@ thread = None
 api_key = os.getenv("API_KEY")
 if api_key is None:
     raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
-data_cube = DataCubeConnection(api_key)
+data_cube = DataCubeConnection()
 
 @api_view(['GET'])
 @csrf_exempt
@@ -67,30 +57,41 @@ def close_room(sid, message):
 def get_user_servers(sid, message):
     try:
         user_id = message['user_id']
-        db_name = message.get('db_name', 'dowellchat')
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
 
-        response = data_cube.fetch_data(
-            db_name=db_name,
-            coll_name="server",
-            filters={"$or": [{"owner": user_id}, {"member_list": {"$in": [user_id]}}]},
-            limit=199,
-            offset=0
-        )
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_server"
 
-        if response['success']:
-            if not response['data']:
-                return sio.emit('server_response', {'data': 'No Server found for this User', 'status': 'failure', 'operation': 'get_user_servers'}, room=sid)
+        if not check_db(workspace_id):
+            return sio.emit('server_response', {'data':"No DB found for the Workspace", 'status': 'failure', 'operation':'get_user_servers'}, room=sid)
 
+        if check_collection(workspace_id, "server"):
+
+            response = data_cube.fetch_data(
+                api_key=api_key,
+                db_name=db_name,
+                coll_name=coll_name,
+                filters={"$or": [{"owner": user_id}, {"member_list": {"$in": [user_id]}}]},
+                limit=199,
+                offset=0
+            )
+
+            if response['success']:
+                if not response['data']:
+                    return sio.emit('server_response', {'data': 'No Server found for this User', 'status': 'failure', 'operation': 'get_user_servers'}, room=sid)
+
+                else:
+                    servers = []
+                    for server in response['data']:
+                        servers.append({'name': server['name'], 'id': str(server['_id'])})
+
+                    print(servers)
+                    return sio.emit('server_response', {'data': servers, 'status': 'success', 'operation': 'get_user_servers'}, room=sid)
             else:
-                servers = []
-                for server in response['data']:
-                    servers.append({'name': server['name'], 'id': str(server['_id'])})
-
-                print(servers)
-                return sio.emit('server_response', {'data': servers, 'status': 'success', 'operation': 'get_user_servers'}, room=sid)
-        else:
-            # Error in fetching data
-            return sio.emit('server_response', {'data': response['message'], 'status': 'failure', 'operation': 'get_user_servers'}, room=sid)
+                # Error in fetching data
+                return sio.emit('server_response', {'data': response['message'], 'status': 'failure', 'operation': 'get_user_servers'}, room=sid)
 
     except Exception as e:
         # Handle other exceptions
@@ -102,14 +103,16 @@ def get_user_servers(sid, message):
 def create_server(sid, message):
     """Create a new server."""
     try:
-        db_name = message.get('db_name', 'dowellchat')
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
         name = message['name']
         member_list = message['member_list']
         channels = message['channels']
         events = message['events'] 
         owner = message['owner']
         created_at = message['created_at']
-
+        
         data = {
                 "name": name,
                 "member_list": member_list,
@@ -118,12 +121,19 @@ def create_server(sid, message):
                 "owner": owner,
                 "created_at": created_at, 
         }
-        response = data_cube.insert_data(db_name=db_name, coll_name="server", data=data)
         
-        if response['success'] == True:
-            return sio.emit('server_response', {'data':"Server Created Successfully", 'status': 'success', 'operation':'create_server'}, room=sid)
-        else:
-            return sio.emit('server_response', {'data':"Error creating server", 'status': 'failure', 'operation':'create_server'}, room=sid)
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_server"
+
+        if not check_db(workspace_id):
+            return sio.emit('server_response', {'data':"No DB found for the Workspace", 'status': 'failure', 'operation':'create_server'}, room=sid)
+        if check_collection(workspace_id, "server"):
+            response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
+
+            if response['success'] == True:
+                return sio.emit('server_response', {'data':response['message'], 'status': 'success', 'operation':'create_server'}, room=sid)
+            else:
+                return sio.emit('server_response', {'data':response['message'], 'status': 'failure', 'operation':'create_server'}, room=sid)
     except Exception as e:
         # Handle other exceptions
         error_message = str(e)
@@ -132,9 +142,15 @@ def create_server(sid, message):
 @sio.event
 def get_server(sid, message):
     try:
-        db_name = message.get('db_name', 'dowellchat')
         server_id = message['server_id']
-        response = data_cube.fetch_data(db_name=db_name, coll_name="server", filters={"_id": server_id}, limit=1, offset=0)
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_server"
+
+        response = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=coll_name, filters={"_id": server_id}, limit=1, offset=0)
 
         if response['success']:
             if response['data']:
@@ -157,25 +173,29 @@ def get_server(sid, message):
 @sio.event
 def update_server(sid, message):
     try:
-        db_name = message.get('db_name', 'dowellchat')
         server_id = message['server_id']
         server_name = message['name']
         member_list = message['member_list']
         channels = message['channels']
         events = message['events'] 
-        owner = message['owner']
-        created_at = message['created_at']
+        
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_server"
+
 
         update_data = {
                 "name": server_name,
                 "member_list": member_list,
                 "channels": channels,
                 "events": events,
-                "owner": owner,
-                "created_at": created_at, 
+
         }
 
-        response = data_cube.update_data(db_name=db_name, coll_name="server", query = {"_id": server_id}, update_data=update_data)    
+        response = data_cube.update_data(api_key=api_key,db_name=db_name, coll_name=coll_name, query = {"_id": server_id}, update_data=update_data)    
         if response['success'] == True:
             return sio.emit('server_response', {'data':"Server Updated Successfully", 'status': 'success', 'operation':'update_server'}, room=sid)
         else:
@@ -188,9 +208,16 @@ def update_server(sid, message):
 @sio.event
 def delete_server(sid, message):
     try:
-        db_name = message.get('db_name', 'dowellchat')
         server_id = message['server_id']
-        response = data_cube.delete_data(db_name=db_name, coll_name="server", query={"_id": server_id})
+        
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_server"
+
+        response = data_cube.delete_data(api_key=api_key,db_name=db_name, coll_name=coll_name, query={"_id": server_id})
 
         if response['success']:
             if response['message']:
@@ -209,10 +236,15 @@ def add_server_member(sid, message):
     try:
         server_id = message['server_id']
         user_id = message['user_id']
-        db_name = message.get('db_name', 'dowellchat')
+        
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
 
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_server"
         # Fetch the server details
-        server_data = data_cube.fetch_data(db_name=db_name, coll_name="server", filters={"_id": server_id}, limit=1, offset=0)
+        server_data = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"_id": server_id}, limit=1, offset=0)
 
         if not server_data['data']:
             return sio.emit('server_response', {'data': 'Server not found', 'status': 'failure', 'operation': 'add_server_member'}, room=sid)
@@ -226,41 +258,45 @@ def add_server_member(sid, message):
             update_data = {
                 "member_list": updated_member_list,
             }
-            response = data_cube.update_data(db_name="dowellchat", coll_name="server", query={"_id": server_id}, update_data=update_data)
+            response = data_cube.update_data(api_key=api_key, db_name=db_name, coll_name=coll_name, query={"_id": server_id}, update_data=update_data)
 
             if not response['success']:
                 return sio.emit('server_response', {'data': "Error adding user to server", 'status': 'failure', 'operation': 'add_server_member'}, room=sid)
 
-        # Fetch the channels associated with the server
-        channels_data = data_cube.fetch_data(db_name="dowellchat", coll_name="channel", filters={"server": server_id}, limit=199, offset=0)
-        channels = channels_data['data']
-        
-        user_added_to_channel = False
+        if product =="dowellchat":
+            # Fetch the channels associated with the server
+            channels_data = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=f"{workspace_id}_channel", filters={"server": server_id}, limit=199, offset=0)
+            channels = channels_data['data']
+            
+            user_added_to_channel = False
 
-        for channel in channels:
-            # Check if the channel is private
-            private_value = channel.get('private', '').lower().strip()
-            print(f"Private value: '{private_value}', Length: {len(private_value)}")
+            for channel in channels:
+                # Check if the channel is private
+                private_value = channel.get('private', '').lower().strip()
+                print(f"Private value: '{private_value}', Length: {len(private_value)}")
 
-            # If the channel is not private, add the member to the channel
-            if private_value == 'false':
-                print("Entered")
-                existing_member_list = channel.get('member_list', [])
-                print(existing_member_list)
+                # If the channel is not private, add the member to the channel
+                if private_value == 'false':
+                    print("Entered")
+                    existing_member_list = channel.get('member_list', [])
+                    print(existing_member_list)
 
-                if user_id in existing_member_list:
-                    print('User is already a member of this channel')
-                    continue  # Move to the next channel
+                    if user_id in existing_member_list:
+                        print('User is already a member of this channel')
+                        continue  # Move to the next channel
 
-                updated_member_list = existing_member_list + [user_id]
-                update_data = {
-                    "member_list": updated_member_list,
-                }
-                response = data_cube.update_data(db_name="dowellchat", coll_name="channel", query={"_id": channel['_id']}, update_data=update_data)
+                    updated_member_list = existing_member_list + [user_id]
+                    update_data = {
+                        "member_list": updated_member_list,
+                    }
+                    response = data_cube.update_data(api_key=api_key, db_name=db_name, coll_name=f"{workspace_id}_channel", query={"_id": channel['_id']}, update_data=update_data)
 
-                if response['success']:
-                    print('User added successfully to channel')
-                    user_added_to_channel = True
+                    if response['success']:
+                        print('User added successfully to channel')
+                        user_added_to_channel = True
+
+        else:
+            user_added_to_channel = True
 
         # Check if the user was added to at least one channel
         if user_added_to_channel:
@@ -277,9 +313,15 @@ def delete_server_member(sid, message):
     try:
         server_id = message['server_id']
         user_id = message['user_id']
-        db_name = message.get('db_name', 'dowellchat')
 
-        server_data = data_cube.fetch_data(db_name=db_name, coll_name="server", filters={"_id": server_id}, limit=1, offset=0)
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_server"
+
+        server_data = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"_id": server_id}, limit=1, offset=0)
 
         if not server_data['data']:
             return sio.emit('server_response', {'data': 'Server not found', 'status': 'failure', 'operation': 'remove_server_member'}, room=sid)
@@ -292,30 +334,33 @@ def delete_server_member(sid, message):
             "member_list": updated_member_list,
         }
 
-        response = data_cube.update_data(db_name="dowellchat", coll_name="server", query={"_id": server_id}, update_data=update_data)
+        response = data_cube.update_data(api_key=api_key,db_name=db_name, coll_name=coll_name, query={"_id": server_id}, update_data=update_data)
 
         if not response['success']:
             return sio.emit('server_response', {'data': "Error removing user from Server", 'status': 'failure', 'operation': 'remove_server_member'}, room=sid)
 
-        # Fetch the channels associated with the server
-        channels_data = data_cube.fetch_data(db_name="dowellchat", coll_name="channel", filters={"server": server_id}, limit=199, offset=0)
-        channels = channels_data['data']
+        if product =="dowellchat":
+            # Fetch the channels associated with the server
+            channels_data = data_cube.fetch_data(db_name="dowellchat", coll_name="channel", filters={"server": server_id}, limit=199, offset=0)
+            channels = channels_data['data']
 
-        user_removed_from_channel = False
+            user_removed_from_channel = False
 
-        for channel in channels:
-            # Update the channel's member list
-            existing_member_list = channel.get('member_list', [])
-            updated_member_list = [member for member in existing_member_list if member != user_id]
+            for channel in channels:
+                # Update the channel's member list
+                existing_member_list = channel.get('member_list', [])
+                updated_member_list = [member for member in existing_member_list if member != user_id]
 
-            update_data = {
-                "member_list": updated_member_list,
-            }
+                update_data = {
+                    "member_list": updated_member_list,
+                }
 
-            response = data_cube.update_data(db_name="dowellchat", coll_name="channel", query={"_id": channel['_id']}, update_data=update_data)
+                response = data_cube.update_data(db_name="dowellchat", coll_name="channel", query={"_id": channel['_id']}, update_data=update_data)
 
-            if response['success']:
-                user_removed_from_channel = True
+                if response['success']:
+                    user_removed_from_channel = True
+        else:
+            user_removed_from_channel = True
 
         if user_removed_from_channel:
             return sio.emit('server_response', {'data': "User removed from Server and all channels", 'status': 'success', 'operation': 'remove_server_member'}, room=sid)
@@ -865,6 +910,7 @@ def cs_create_category(sid, message):
     try:
         name = message['name']
         server = message['server_id']
+        member_list = message['member_list']
         rooms= message['rooms']
         private = message['private']
         created_at = message['created_at']
@@ -873,6 +919,7 @@ def cs_create_category(sid, message):
                 "name": name,
                 "rooms": rooms,
                 "server_id":server,
+                "member_list":member_list,
                 "private": private,        
                 "created_at": created_at, 
         }
@@ -911,6 +958,66 @@ def cs_get_server_category(sid, message):
     except Exception as e:
         error_message = str(e)
         return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation':'get_server_category'}, room=sid)
+
+
+@sio.event
+def cs_get_user_category(sid, message):
+    try:
+        
+        server_id = message['server_id']
+        user_id = message['user_id']        
+        
+         # Query based on owner
+        response_owner = data_cube.fetch_data(
+            db_name="customer_support",
+            coll_name="server",
+            filters={"owner": user_id},
+            limit=1,
+            offset=0
+        )
+
+        # Query based on _id
+        response_id = data_cube.fetch_data(
+            db_name="customer_support",
+            coll_name="server",
+            filters={"_id": server_id},
+            limit=1,
+            offset=0
+        )
+        
+        if response_owner['success'] and response_owner['data'] and response_id['success'] and response_id['data']:
+
+            new_response = data_cube.fetch_data(
+                db_name="customer_support", 
+                coll_name="category", 
+                filters={"server_id": server_id}, 
+                limit=199, 
+                offset=0
+            )
+
+            if new_response['success']:
+                if new_response['data']:
+                    return sio.emit('category_response', {'data': new_response['data'], 'status': 'success', 'operation':'get_user_category'}, room=sid)
+        
+        new_response = data_cube.fetch_data(
+            db_name="customer_support", 
+            coll_name="category", 
+            filters={"$and": [{"server_id": server_id}, {"member_list": {"$in": [user_id]}}]},  
+            limit=199, 
+            offset=0
+            )
+        if new_response['success']:
+                if new_response['data']:
+                    return sio.emit('category_response', {'data': new_response['data'], 'status': 'success', 'operation':'get_user_category'}, room=sid)
+        else:
+            return sio.emit('category_response', {'data': new_response['message'], 'status': 'failure', 'operation':'get_user_category'}, room=sid)
+
+        return sio.emit('category_response', {'data': "No category found", 'status': 'failure', 'operation':'get_user_category'}, room=sid)
+    
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation':'get_user_category'}, room=sid)
+
 
 @sio.event
 def cs_update_category(sid, message):
@@ -955,6 +1062,82 @@ def cs_delete_category(sid, message):
         error_message = str(e)
         return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation':'delete_category'}, room=sid)
 
+@sio.event
+def cs_add_category_member(sid, message):
+    try:
+        category_id = message['category_id']
+        user_id = message['user_id']
+
+        is_category = data_cube.fetch_data(db_name="customer_support", coll_name="category", filters={"_id": category_id}, limit=1, offset=0)
+
+        if not is_category['data']:
+            return sio.emit('category_response', {'data': 'Category not found', 'status': 'failure', 'operation': 'add_category_member'}, room=sid)
+
+        existing_member_list = is_category['data'][0].get('member_list', [])
+        print(f"existing memember {existing_member_list}")
+        # Check if user_id is already in the member_list
+        if user_id in existing_member_list:
+            return sio.emit('category_response', {'data': 'User is already a member', 'status': 'failure', 'operation': 'add_category_member'}, room=sid)
+
+        # Add the user_id to the member_list
+        updated_member_list = existing_member_list + [user_id]
+        update_data = {
+            "member_list": updated_member_list,
+        }
+        print(updated_member_list)
+
+        response = data_cube.update_data(db_name="customer_support", coll_name="channel", query={"_id": category_id}, update_data=update_data)
+
+        if response['success']:
+            return sio.emit('category_response', {'data': "User added Successfully", 'status': 'success', 'operation': 'add_category_member'}, room=sid)
+        else:
+            return sio.emit('category_response', {'data': "Error adding user", 'status': 'failure', 'operation': 'add_category_member'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation': 'add_category_member'}, room=sid)
+
+# @sio.event
+# def create_room(sid, message):
+#     try:
+#         name = message['public_link_id']
+#         category = message['category_id']
+#         member_list = message['member_list']
+#         created_at = message['created_at']
+
+#         data = {
+#                 "name": name,
+#                 "topic": topic,
+#                 "type": channel_type,
+#                 "private": private,
+#                 "member_list": member_list,
+#                 "server":server,        
+#                 "created_at": created_at, 
+#         }
+#         is_server = data_cube.fetch_data(db_name="dowellchat", coll_name="server", filters={"_id": server}, limit=1, offset=0)
+
+#         if is_server['data'] ==[]:
+#             return sio.emit('channel_response', {'data': 'Server not found', 'status': 'failure', 'operation':'create_channel'}, room=sid)
+            
+#         response = data_cube.insert_data(db_name="dowellchat", coll_name="channel", data=data)
+        
+#         if response['success'] == True:
+#             channels = data_cube.fetch_data(db_name="dowellchat", coll_name="channel", filters={"server": server}, limit=199, offset=0)
+#             channel_list=[]
+#             for channel in channels['data']:
+#                 channel_list.append(channel['name'])
+#             sio.emit('channel_response', {'data': channel_list, 'status': 'success', 'operation':'get_server_channels'}, room=sid)    
+#             sio.enter_room(sid, name)
+#             return sio.emit('channel_response', {'data':"Channel Created Successfully", 'status': 'success', 'operation':'create_channel'}, room=sid)
+        
+#         else:
+#             return sio.emit('channel_response', {'data':"Error creating Channel", 'status': 'failure', 'operation':'create_channel'}, room=sid)
+#     except Exception as e:
+#         # Handle other exceptions
+#         error_message = str(e)
+#         return sio.emit('channel_response', {'data': error_message, 'status': 'failure', 'operation':'create_channel'}, room=sid)
+
+    
 
 """PUBLIC RELEASE"""
 public_namespace = '/public'
