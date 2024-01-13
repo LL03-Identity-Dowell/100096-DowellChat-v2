@@ -1,5 +1,5 @@
-# async_mode = 'gevent'
-async_mode = "threading"
+async_mode = 'gevent'
+#async_mode = "threading"
 from .models import Message
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
@@ -1295,15 +1295,6 @@ def public_join_room(sid, message):
         error_message = str(e)
         return sio.emit('public_message_response', {'data': error_message, 'status': 'failure', 'operation':'join_public_room'}, room=sid)
 
-    # messages = Message.objects.filter(room_id=message['room']).all()
-
-    # sio.emit('my_response', {'data': f"{sid} Joined the Room",  'count': 0}, room=room, skip_sid=sid)
-
-    # if messages.count()==0:
-    #     sio.emit('my_response', {'data': "Hey how may i help you",  'count': 0}, room=sid)
-    # else:
-    #     for i in messages:
-    #         sio.emit('my_response', {'data': str(i.message_data),  'count': 0}, room=sid)
 
 
 @sio.event
