@@ -1275,20 +1275,25 @@ def public_join_room(sid, message):
         db_name = f"{workspace_id}_{product}"
         coll_name = f"{workspace_id}_public_room"
         response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"_id": room}, limit=1, offset=0)
+
         if response['success']:
             if not response['data']:
                 return sio.emit('public_room_response', {'data': 'No Room found ', 'status': 'failure', 'operation':'join_public_room'}, room=sid)
             else:
                 room_name = response['data'][0].get('name', '')
-                print(room_name)
                 sio.enter_room(sid, room_name)
-                sio.emit('public_message_response', {'data': "Welcome to the new chat", 'status': 'success', 'operation': 'send_message'}, room=sid)    
+                msg_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=f"{workspace_id}_public_chat", filters={"room_id": room}, limit=200, offset=0)
+                if msg_response['data']:
+                    for message_data in msg_response['data']:
+                        sio.emit('public_message_response', {'data': message_data, 'status': 'success', 'operation': 'send_message'}, room=sid)
+                else:
+                    sio.emit('public_message_response', {'data': "Welcome to the new chat. There are no existing messages.", 'status': 'success', 'operation': 'send_message'}, room=sid)    
                 return
 
     except Exception as e:
         # Handle other exceptions
         error_message = str(e)
-        return sio.emit('public_room_response', {'data': error_message, 'status': 'failure', 'operation':'join_public_room'}, room=sid)
+        return sio.emit('public_message_response', {'data': error_message, 'status': 'failure', 'operation':'join_public_room'}, room=sid)
 
     # messages = Message.objects.filter(room_id=message['room']).all()
 
@@ -1299,6 +1304,48 @@ def public_join_room(sid, message):
     # else:
     #     for i in messages:
     #         sio.emit('my_response', {'data': str(i.message_data),  'count': 0}, room=sid)
+
+
+@sio.event
+def public_message_event(sid, message):
+    try:
+        room_id = message['room_id']
+        message_data = message['message_data']
+        user_id = message['user_id']
+        reply_to = message['reply_to']
+        created_at = message['created_at']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_public_chat"
+
+        data = {
+                    "room_id": room_id,
+                    "message_data": message_data,
+                    "author": user_id,
+                    "reply_to": reply_to,        
+                    "created_at": created_at, 
+        }
+
+        response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=f"{workspace_id}_public_room", filters={"_id": room_id}, limit=1, offset=0)
+        if response['success']:
+            if not response['data']:
+                return sio.emit('public_room_response', {'data': 'No Room found ', 'status': 'failure', 'operation':'send_message'}, room=sid)
+            else:
+                room_name = response['data'][0].get('name', '')
+                if check_collection(workspace_id, "public_chat"):
+                    response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
+                    
+                    if response['success'] == True:
+                        return sio.emit('public_message_response', {'data':data, 'status': 'success'}, room=room_name)
+                    else:
+                        return sio.emit('public_message_response', {'data':"Error sending message", 'status': 'failure'}, room=room_name)
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('public_message_response', {'data': error_message, 'status': 'failure'}, room=room_name)
+
 
 """PUBLIC RELEASE"""
 public_namespace = '/public'
