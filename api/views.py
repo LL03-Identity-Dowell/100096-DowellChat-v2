@@ -1235,7 +1235,7 @@ def create_public_room(sid, message):
             
             if response['success'] == True:
                 sio.enter_room(sid, response['data']['inserted_id'])
-                sio.emit('public_message_response', {'data': "Hey,  Welcome to DoWell Customer Support. How may I assist you?", 'status': 'success', 'operation': 'send_message'}, room=name)
+                sio.emit('public_message_response', {'data': "Hey,  Welcome to DoWell Customer Support. How may I assist you?", 'status': 'success', 'operation': 'create_public_room'}, room=name)
 
                 new_room_date ={
                     'room_id': response['data']['inserted_id'], 
@@ -1284,8 +1284,9 @@ def public_join_room(sid, message):
                 sio.enter_room(sid, room_name)
                 msg_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=f"{workspace_id}_public_chat", filters={"room_id": room}, limit=200, offset=0)
                 if msg_response['data']:
-                    for message_data in msg_response['data']:
-                        sio.emit('public_message_response', {'data': message_data, 'status': 'success', 'operation': 'send_message'}, room=sid)
+                    sio.emit('public_message_response', {'data': msg_response['data'], 'status': 'success', 'operation': 'join_public_room'}, room=sid)
+                    # for message_data in msg_response['data']:
+                    #     sio.emit('public_message_response', {'data': message_data, 'status': 'success', 'operation': 'join_public_room'}, room=sid)
                 else:
                     sio.emit('public_message_response', {'data': "Welcome to the new chat. There are no existing messages.", 'status': 'success', 'operation': 'send_message'}, room=sid)    
                 return
@@ -1380,6 +1381,31 @@ def auto_join_room(sid, message):
 
 
 
+@sio.event
+def cs_get_category_room(sid, message):
+    try:
+        category_id = message['category_id']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_public_room"
+
+        if check_collection(workspace_id, "category"):
+            response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"category": category_id}, limit=20, offset=0)
+            if response['success']:
+                if not response['data']:
+                    return sio.emit('category_response', {'data': 'No Room found for this Category', 'status': 'failure', 'operation':'get_category_room'}, room=sid)
+
+                else:
+                    return sio.emit('category_response', {'data': response['data'], 'status': 'success', 'operation':'get_category_room'}, room=sid)
+            else:
+                return sio.emit('category_response', {'data': response['message'], 'status': 'failure', 'operation':'get_category_room'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation':'get_category_room'}, room=sid)
 
 """PUBLIC RELEASE"""
 public_namespace = '/public'
