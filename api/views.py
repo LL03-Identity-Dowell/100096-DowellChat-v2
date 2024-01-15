@@ -1,5 +1,5 @@
-async_mode = 'gevent'
-#async_mode = "threading"
+# async_mode = 'gevent'
+async_mode = "threading"
 from .models import Message
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
@@ -1234,8 +1234,8 @@ def create_public_room(sid, message):
             response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
             
             if response['success'] == True:
-                sio.enter_room(sid, name)
-                sio.emit('public_message_response', {'data': "Welcome to the new chat", 'status': 'success', 'operation': 'send_message'}, room=name)
+                sio.enter_room(sid, response['data']['inserted_id'])
+                sio.emit('public_message_response', {'data': "Hey,  Welcome to DoWell Customer Support. How may I assist you?", 'status': 'success', 'operation': 'send_message'}, room=name)
 
                 new_room_date ={
                     'room_id': response['data']['inserted_id'], 
@@ -1280,7 +1280,7 @@ def public_join_room(sid, message):
             if not response['data']:
                 return sio.emit('public_room_response', {'data': 'No Room found ', 'status': 'failure', 'operation':'join_public_room'}, room=sid)
             else:
-                room_name = response['data'][0].get('name', '')
+                room_name = response['data'][0].get('_id', '')
                 sio.enter_room(sid, room_name)
                 msg_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=f"{workspace_id}_public_chat", filters={"room_id": room}, limit=200, offset=0)
                 if msg_response['data']:
@@ -1330,12 +1330,55 @@ def public_message_event(sid, message):
                     response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
                     
                     if response['success'] == True:
-                        return sio.emit('public_message_response', {'data':data, 'status': 'success'}, room=room_name)
+                        return sio.emit('public_message_response', {'data':data, 'status': 'success'}, room=room_id)
                     else:
-                        return sio.emit('public_message_response', {'data':"Error sending message", 'status': 'failure'}, room=room_name)
+                        return sio.emit('public_message_response', {'data':"Error sending message", 'status': 'failure'}, room=room_id)
     except Exception as e:
         error_message = str(e)
-        return sio.emit('public_message_response', {'data': error_message, 'status': 'failure'}, room=room_name)
+        return sio.emit('public_message_response', {'data': error_message, 'status': 'failure'}, room=room_id)
+
+
+@sio.event
+def auto_join_room(sid, message):
+    try:
+        user_id = message['user_id']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name_category = f"{workspace_id}_category"
+
+        # Query to get the categories where the user is a member
+        response_category = data_cube.fetch_data(
+            api_key=api_key,
+            db_name=db_name,
+            coll_name=coll_name_category,
+            filters={"member_list": {"$in": [user_id]}},
+            limit=199,
+            offset=0
+        )
+
+        if response_category['success'] and response_category['data']:
+            for category in response_category['data']:
+                # Join the rooms in the category
+                for room_id in category.get('rooms', []):
+                    sio.enter_room(sid, str(room_id))
+
+            # Add more logic here if needed for handling joined rooms
+            return sio.emit('auto_join_response', {'data': 'Rooms joined successfully', 'status': 'success',
+                                                   'operation': 'auto_join_room'}, room=sid)
+        else:
+            # No category found for the user
+            return sio.emit('auto_join_response', {'data': 'No category found for the user', 'status': 'failure',
+                                                   'operation': 'auto_join_room'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('auto_join_response', {'data': error_message, 'status': 'failure',
+                                               'operation': 'auto_join_room'}, room=sid)
+
+
 
 
 """PUBLIC RELEASE"""
