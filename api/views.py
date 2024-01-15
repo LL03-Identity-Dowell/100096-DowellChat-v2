@@ -1,11 +1,13 @@
-async_mode = 'gevent'
-# async_mode = "threading"
+# async_mode = 'gevent'
+async_mode = "threading"
+import requests
 from .models import Message
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 from .serializers import MessageSerializer
 from .utils import processApiService, DataCubeConnection, create_cs_db_meta, check_db, check_collection
 import os
+import json
 from django.http import HttpResponse
 import socketio
 
@@ -1406,6 +1408,38 @@ def cs_get_category_room(sid, message):
     except Exception as e:
         error_message = str(e)
         return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation':'get_category_room'}, room=sid)
+
+
+""" MASTER LINK EVENTS """
+@sio.event
+def create_master_link(sid, message):
+    try:
+        company_id = message['workspace_id']
+        links = message['links']
+        job_name = message['job_name']
+        url = "https://www.qrcodereviews.uxlivinglab.online/api/v3/qr-code/"
+
+        payload = {
+            "qrcode_type": "Link",
+            "quantity": 1,
+            "company_id": company_id,
+            "links": links,
+            "document_name": job_name,
+        }
+
+        response = requests.post(url, json=payload)
+
+        if response.status_code == 201:
+            # Successful response
+            return sio.emit('master_link_response', {'data': json.loads(response.text), 'status': 'success', 'operation': 'create_master_link'}, room=sid)
+        else:
+            # Error response
+            return sio.emit('master_link_response', {'data': f"Error: {json.loads(response.text)}", 'status': 'failure', 'operation': 'create_master_link'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('master_link_response', {'data': error_message, 'status': 'failure', 'operation': 'create_master_link'}, room=sid)
+
 
 """PUBLIC RELEASE"""
 public_namespace = '/public'
