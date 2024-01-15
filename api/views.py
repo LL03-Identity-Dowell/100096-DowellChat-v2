@@ -1,5 +1,5 @@
-# async_mode = 'gevent'
-async_mode = "threading"
+async_mode = 'gevent'
+# async_mode = "threading"
 from .models import Message
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
