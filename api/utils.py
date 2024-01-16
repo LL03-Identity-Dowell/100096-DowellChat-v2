@@ -148,3 +148,16 @@ data_cube = DataCubeConnection()
 # print(check_collection("646ba835ce27ae02d024a902", "server"))
 
 # print(check_db("646ba835ce27ae02d024a902"))
+
+def set_finalize(linkid):
+    # print(linkid)
+    url = f"https://www.qrcodereviews.uxlivinglab.online/api/v3/masterlink/?link_id={linkid}"
+    payload = {
+        "is_opened": True,
+    }
+    response = requests.put(url, json=payload)
+    # print(response)
+    # print(response.text)
+    return response.text
+
+# print(set_finalize("6155348369150513646"))

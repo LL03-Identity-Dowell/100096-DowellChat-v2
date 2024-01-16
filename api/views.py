@@ -1,5 +1,5 @@
-# async_mode = 'gevent'
-async_mode = "threading"
+async_mode = 'gevent'
+# async_mode = "threading"
 import requests
 from .models import Message
 from rest_framework.decorators import api_view
@@ -1227,7 +1227,8 @@ def create_public_room(sid, message):
 
         data = {
                 "name": name,
-                "category": category,        
+                "category": category,  
+                "is_active": True,        
                 "created_at": created_at, 
         }
         
@@ -1290,7 +1291,7 @@ def public_join_room(sid, message):
                     # for message_data in msg_response['data']:
                     #     sio.emit('public_message_response', {'data': message_data, 'status': 'success', 'operation': 'join_public_room'}, room=sid)
                 else:
-                    sio.emit('public_message_response', {'data': "Welcome to the new chat. There are no existing messages.", 'status': 'success', 'operation': 'send_message'}, room=sid)    
+                    sio.emit('public_message_response', {'data': [], 'status': 'success', 'operation': 'join_public_room'}, room=sid)    
                 return
 
     except Exception as e:
@@ -1319,7 +1320,7 @@ def public_message_event(sid, message):
                     "room_id": room_id,
                     "message_data": message_data,
                     "author": user_id,
-                    "reply_to": reply_to,        
+                    "reply_to": reply_to,      
                     "created_at": created_at, 
         }
 
@@ -1333,9 +1334,9 @@ def public_message_event(sid, message):
                     response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
                     
                     if response['success'] == True:
-                        return sio.emit('public_message_response', {'data':data, 'status': 'success'}, room=room_id)
+                        return sio.emit('public_message_response', {'data':data, 'status': 'success', 'operation':'send_message'}, room=room_id)
                     else:
-                        return sio.emit('public_message_response', {'data':"Error sending message", 'status': 'failure'}, room=room_id)
+                        return sio.emit('public_message_response', {'data':"Error sending message", 'status': 'failure', 'operation':'send_message'}, room=room_id)
     except Exception as e:
         error_message = str(e)
         return sio.emit('public_message_response', {'data': error_message, 'status': 'failure'}, room=room_id)
@@ -1439,6 +1440,28 @@ def create_master_link(sid, message):
     except Exception as e:
         error_message = str(e)
         return sio.emit('master_link_response', {'data': error_message, 'status': 'failure', 'operation': 'create_master_link'}, room=sid)
+
+# @sio.event
+# def set_finalize(sid, message):
+#     try:
+#         linkid = message['linkid']
+#         # print(linkid)
+#         url = f"https://www.qrcodereviews.uxlivinglab.online/api/v3/masterlink/?link_id={linkid}"
+#         payload = {
+#             "is_finalized": True,
+#         }
+#         response = requests.put(url, json=payload)
+
+#         if response.status_code == 200:
+#             # Successful response
+#             return sio.emit('master_link_response', {'data': json.loads(response.text), 'status': 'success', 'operation': 'set_finalize'}, room=sid)
+#         else:
+#             # Error response
+#             return sio.emit('master_link_response', {'data': f"Error: {json.loads(response.text)}", 'status': 'failure', 'operation': 'set_finalize'}, room=sid)
+
+#     except Exception as e:
+#         error_message = str(e)
+#         return sio.emit('master_link_response', {'data': error_message, 'status': 'failure', 'operation': 'set_finalize'}, room=sid)
 
 
 """PUBLIC RELEASE"""
