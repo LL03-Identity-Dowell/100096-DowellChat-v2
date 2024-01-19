@@ -1,5 +1,5 @@
-# async_mode = 'gevent'
-async_mode = "threading"
+async_mode = 'gevent'
+# async_mode = "threading"
 import requests
 from .models import Message
 from rest_framework.decorators import api_view
@@ -1261,6 +1261,7 @@ def create_public_room(sid, message):
         }
         
         if check_collection(workspace_id, "public_room"):
+            check_collection(workspace_id, "public_chat")
             
             response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
             
@@ -1351,19 +1352,21 @@ def public_message_event(sid, message):
                     "created_at": created_at, 
         }
 
+        sio.emit('public_message_response', {'data':data, 'status': 'success', 'operation':'send_message'}, room=room_id)
+
         response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=f"{workspace_id}_public_room", filters={"_id": room_id}, limit=1, offset=0)
         if response['success']:
             if not response['data']:
                 return sio.emit('public_room_response', {'data': 'No Room found ', 'status': 'failure', 'operation':'send_message'}, room=sid)
             else:
                 room_name = response['data'][0].get('name', '')
-                if check_collection(workspace_id, "public_chat"):
-                    response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
-                    
-                    if response['success'] == True:
-                        return sio.emit('public_message_response', {'data':data, 'status': 'success', 'operation':'send_message'}, room=room_id)
-                    else:
-                        return sio.emit('public_message_response', {'data':"Error sending message", 'status': 'failure', 'operation':'send_message'}, room=room_id)
+                
+                response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
+                
+                if response['success'] == True:
+                    return 
+                else:
+                    return sio.emit('public_message_response', {'data':"Error sending message", 'status': 'failure', 'operation':'send_message'}, room=room_id)
     except Exception as e:
         error_message = str(e)
         return sio.emit('public_message_response', {'data': error_message, 'status': 'failure'}, room=room_id)
