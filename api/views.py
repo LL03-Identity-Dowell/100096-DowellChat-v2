@@ -1,5 +1,5 @@
-async_mode = 'gevent'
-# async_mode = "threading"
+# async_mode = 'gevent'
+async_mode = "threading"
 import requests
 from .models import Message
 from rest_framework.decorators import api_view
@@ -177,9 +177,9 @@ def update_server(sid, message):
     try:
         server_id = message['server_id']
         server_name = message['name']
-        member_list = message['member_list']
-        channels = message['channels']
-        events = message['events'] 
+        # member_list = message['member_list']
+        # channels = message['channels']
+        # events = message['events'] 
         
         workspace_id = message['workspace_id']
         api_key = message['api_key']
@@ -191,9 +191,9 @@ def update_server(sid, message):
 
         update_data = {
                 "name": server_name,
-                "member_list": member_list,
-                "channels": channels,
-                "events": events,
+                # "member_list": member_list,
+                # "channels": channels,
+                # "events": events,
 
         }
 
@@ -1074,6 +1074,32 @@ def cs_get_user_category(sid, message):
 
 
 @sio.event
+def cs_get_category_room(sid, message):
+    try:
+        category_id = message['category_id']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_public_room"
+
+        if check_collection(workspace_id, "category"):
+            response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"category": category_id}, limit=20, offset=0)
+            if response['success']:
+                if not response['data']:
+                    return sio.emit('category_response', {'data': 'No Room found for this Category', 'status': 'failure', 'operation':'get_category_room'}, room=sid)
+
+                else:
+                    return sio.emit('category_response', {'data': response['data'], 'status': 'success', 'operation':'get_category_room'}, room=sid)
+            else:
+                return sio.emit('category_response', {'data': response['message'], 'status': 'failure', 'operation':'get_category_room'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation':'get_category_room'}, room=sid)
+
+@sio.event
 def cs_update_category(sid, message):
     try:
 
@@ -1210,6 +1236,8 @@ def cs_delete_category_member(sid, message):
         return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation': 'delete_category_member'}, room=sid)
 
 
+""" PUBLIC MESSAGE SECTION"""
+
 @sio.event
 def create_public_room(sid, message):
     try:
@@ -1300,7 +1328,6 @@ def public_join_room(sid, message):
         return sio.emit('public_message_response', {'data': error_message, 'status': 'failure', 'operation':'join_public_room'}, room=sid)
 
 
-
 @sio.event
 def public_message_event(sid, message):
     try:
@@ -1383,33 +1410,16 @@ def auto_join_room(sid, message):
                                                'operation': 'auto_join_room'}, room=sid)
 
 
-
 @sio.event
-def cs_get_category_room(sid, message):
+def public_request_call(sid, message):
     try:
-        category_id = message['category_id']
-        workspace_id = message['workspace_id']
-        api_key = message['api_key']
-        product = message['product']
-
-        db_name = f"{workspace_id}_{product}"
-        coll_name = f"{workspace_id}_public_room"
-
-        if check_collection(workspace_id, "category"):
-            response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"category": category_id}, limit=20, offset=0)
-            if response['success']:
-                if not response['data']:
-                    return sio.emit('category_response', {'data': 'No Room found for this Category', 'status': 'failure', 'operation':'get_category_room'}, room=sid)
-
-                else:
-                    return sio.emit('category_response', {'data': response['data'], 'status': 'success', 'operation':'get_category_room'}, room=sid)
-            else:
-                return sio.emit('category_response', {'data': response['message'], 'status': 'failure', 'operation':'get_category_room'}, room=sid)
-
+        room_id = message['room_id']
+        sio.emit('public_room_response', {'data': f"{sid} Is Requesting for a Call",  'sid': f"{sid}", 'status': 'success',
+                                               'operation': 'public_request_call'}, room=room_id, skip_sid=sid)
     except Exception as e:
         error_message = str(e)
-        return sio.emit('category_response', {'data': error_message, 'status': 'failure', 'operation':'get_category_room'}, room=sid)
-
+        return sio.emit('public_room_response', {'data': error_message, 'status': 'failure',
+                                               'operation': 'public_request_call'}, room=sid)
 
 """ MASTER LINK EVENTS """
 @sio.event
@@ -1441,27 +1451,29 @@ def create_master_link(sid, message):
         error_message = str(e)
         return sio.emit('master_link_response', {'data': error_message, 'status': 'failure', 'operation': 'create_master_link'}, room=sid)
 
-# @sio.event
-# def set_finalize(sid, message):
-#     try:
-#         linkid = message['linkid']
-#         # print(linkid)
-#         url = f"https://www.qrcodereviews.uxlivinglab.online/api/v3/masterlink/?link_id={linkid}"
-#         payload = {
-#             "is_finalized": True,
-#         }
-#         response = requests.put(url, json=payload)
+@sio.event
+def set_finalize(sid, message):
+    try:
+        linkid = message['linkid']
+        # print(linkid)
+        url = f"https://www.qrcodereviews.uxlivinglab.online/api/v3/masterlink/?link_id={linkid}"
+        payload = {
+            "is_finalized": True,
+        }
+        response = requests.put(url, json=payload)
 
-#         if response.status_code == 200:
-#             # Successful response
-#             return sio.emit('master_link_response', {'data': json.loads(response.text), 'status': 'success', 'operation': 'set_finalize'}, room=sid)
-#         else:
-#             # Error response
-#             return sio.emit('master_link_response', {'data': f"Error: {json.loads(response.text)}", 'status': 'failure', 'operation': 'set_finalize'}, room=sid)
+        if response.status_code == 200:
+            # Successful response
+            return sio.emit('master_link_response', {'data': json.loads(response.text), 'status': 'success', 'operation': 'set_finalize'}, room=sid)
+        else:
+            # Error response
+            return sio.emit('master_link_response', {'data': f"Error: {json.loads(response.text)}", 'status': 'failure', 'operation': 'set_finalize'}, room=sid)
 
-#     except Exception as e:
-#         error_message = str(e)
-#         return sio.emit('master_link_response', {'data': error_message, 'status': 'failure', 'operation': 'set_finalize'}, room=sid)
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('master_link_response', {'data': error_message, 'status': 'failure', 'operation': 'set_finalize'}, room=sid)
+
+
 
 
 """PUBLIC RELEASE"""
