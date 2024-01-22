@@ -1,5 +1,5 @@
-async_mode = 'gevent'
-# async_mode = "threading"
+# async_mode = 'gevent'
+async_mode = "threading"
 import requests
 from .models import Message
 from rest_framework.decorators import api_view
@@ -1476,6 +1476,31 @@ def set_finalize(sid, message):
         error_message = str(e)
         return sio.emit('master_link_response', {'data': error_message, 'status': 'failure', 'operation': 'set_finalize'}, room=sid)
 
+
+@sio.event
+def remove_public_usernames(sid, message):
+    try:
+        org_id = message['workspace_id']
+        product = message['product']
+        usernames = message['usernames']
+        
+        payload = {
+        "org_id":org_id,
+        "product":product,
+        "usernames": usernames
+        }
+        url = "https://100093.pythonanywhere.com/api/remove_public_usernames/"
+        response = requests.post(url, json=payload)
+        if response.status_code == 200:
+            # Successful response
+            return sio.emit('master_link_response', {'data': json.loads(response.text), 'status': 'success', 'operation': 'remove_public_usernames'}, room=sid)
+        else:
+            # Error response
+            return sio.emit('master_link_response', {'data': f"Error: {json.loads(response.text)}", 'status': 'failure', 'operation': 'remove_public_usernames'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('master_link_response', {'data': error_message, 'status': 'failure', 'operation': 'remove_public_usernames'}, room=sid)
 
 
 
