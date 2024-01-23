@@ -38,6 +38,7 @@ class DataCubeConnection:
             "filters": filters,
             "limit": limit,
             "offset": offset,
+            "payment":False
         }
         return self._make_request(DBCrudOperation.FETCH, payload)
 
