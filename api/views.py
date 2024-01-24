@@ -1,5 +1,5 @@
-# async_mode = 'gevent'
-async_mode = "threading"
+async_mode = 'gevent'
+# async_mode = "threading"
 import requests
 from .models import Message
 from rest_framework.decorators import api_view
@@ -1458,7 +1458,15 @@ def create_master_link(sid, message):
 def set_finalize(sid, message):
     try:
         linkid = message['linkid']
-        # print(linkid)
+        room_id = message['room_id']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_public_room"
+
+        
         url = f"https://www.qrcodereviews.uxlivinglab.online/api/v3/masterlink/?link_id={linkid}"
         payload = {
             "is_finalized": True,
@@ -1466,7 +1474,18 @@ def set_finalize(sid, message):
         response = requests.put(url, json=payload)
 
         if response.status_code == 200:
-            # Successful response
+            update_data = {
+                    "is_active": False
+            }
+
+            room_response = data_cube.update_data(api_key=api_key, db_name=db_name, coll_name=coll_name, query = {"_id": room_id}, update_data=update_data)     
+            
+            if room_response['success'] == True:
+                sio.emit('master_link_response', {'data':"Room Set as Inactive", 'status': 'success', 'operation':'set_finalize'}, room=sid)
+            else:
+                return sio.emit('master_link_response', {'data':"Error updating Room", 'status': 'failure', 'operation':'set_finalize'}, room=sid)
+
+            
             return sio.emit('master_link_response', {'data': json.loads(response.text), 'status': 'success', 'operation': 'set_finalize'}, room=sid)
         else:
             # Error response
