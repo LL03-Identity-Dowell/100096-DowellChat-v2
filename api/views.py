@@ -89,7 +89,6 @@ def get_user_servers(sid, message):
                     for server in response['data']:
                         servers.append({'name': server['name'], 'id': str(server['_id'])})
 
-                    print(servers)
                     return sio.emit('server_response', {'data': servers, 'status': 'success', 'operation': 'get_user_servers'}, room=sid)
             else:
                 # Error in fetching data
@@ -1260,17 +1259,35 @@ def create_public_room(sid, message):
                 "created_at": created_at, 
         }
         
+
         if check_collection(workspace_id, "public_room"):
             check_collection(workspace_id, "public_chat")
             
+
+            is_room = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=coll_name, filters={"name": name}, limit=1, offset=0)
+
+            if is_room['success']:
+                if is_room['data']:
+
+                    sio.enter_room(sid, is_room['data'][0]['_id'])
+
+                    msg_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=f"{workspace_id}_public_chat", filters={"room_id": is_room['data'][0]['_id']}, limit=200, offset=0)
+                    if msg_response['data']:
+                        sio.emit('public_message_response', {'data': msg_response['data'], 'status': 'success', 'operation': 'create_public_room'}, room=sid)
+                    else:
+                        sio.emit('public_message_response', {'data': [], 'status': 'success', 'operation': 'create_public_room'}, room=sid)    
+                    return
+
+
             response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
-            
+
             if response['success'] == True:
+
                 sio.enter_room(sid, response['data']['inserted_id'])
                 sio.emit('public_message_response', {'data': "Hey,  Welcome to DoWell Customer Support. How may I assist you?", 'status': 'success', 'operation': 'create_public_room'}, room=name)
 
                 new_room_date ={
-                    'room_id': response['data']['inserted_id'], 
+                    '_id': response['data']['inserted_id'], 
                     'name': name, 
                     'category': category}
                 sio.emit('new_public_room', {'data': new_room_date, 'status': 'success', }, room=category)
@@ -1280,12 +1297,11 @@ def create_public_room(sid, message):
                 update_data = {
                     "rooms": updated_rooms,
                 }
-                print(updated_rooms)
 
                 response = data_cube.update_data(api_key=api_key,db_name=db_name, coll_name=f"{workspace_id}_category", query={"_id": category}, update_data=update_data)
 
                 if response['success']:
-                    return sio.emit('public_room_response', {'data': "Public Chat Room Created Successfully", 'status': 'success', 'operation': 'create_public_room'}, room=sid)
+                    return sio.emit('public_room_response', {'data': new_room_date, 'status': 'success', 'operation': 'create_public_room'}, room=sid)
                 else:
                     return sio.emit('public_room_response', {'data': "Error Creating Room", 'status': 'failure', 'operation': 'create_public_room'}, room=sid)
             
