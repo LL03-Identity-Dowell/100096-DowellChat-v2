@@ -175,20 +175,20 @@ def get_link_usernames(links):
     for link_info in links:
         link = link_info.get('link', '')
         parsed_url = urlparse(link)
-        fragment_params = parse_qs(parsed_url.query)
+
+        # Check for public_link_id in fragment
+        fragment_params = parse_qs(parsed_url.fragment)
         public_link_id = fragment_params.get('public_link_id', [None])[0]
+
         public_link_ids.append(public_link_id)
 
     return public_link_ids
 
 
-# # List of example links from the payload
+# # # List of example links from the payload
 # links = [
 #             {
-#             "link":"https://ll03-identity-dowell.github.io/100096-customer-support/?type=pulic_chat&public_link_id=jidj8tt924h&org_id=646ba835ce27ae02d024a902&category_id=65a118edc5b56cc2cab5e9b5&product=customer_support&link_id=8103606995632525806"                       
-#             },
-#             {
-#             "link":"https://ll03-identity-dowell.github.io/100096-customer-support/?type=pulic_chat&public_link_id=jidj8ai924h&org_id=646ba835ce27ae02d024a902&category_id=65a118edc5b56cc2cab5e9b5&product=customer_support&link_id=8103606995632525806"                       
+#             "link":"https://ll03-identity-dowell.github.io/100096-customer-support/#?type=public_chat&public_link_id=OovVv67mTjmY&org_id=6385c0f18eca0fb652c94558&category_id=65b40562c5b56cc2cabba113&product=customer_support&api_key=1b834e07-c68b-4bf6-96dd-ab7cdc62f07f&link_id=3175189911150006766"                       
 #             }
 # ]
 # print(get_link_usernames(links))
