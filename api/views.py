@@ -5,7 +5,7 @@ from .models import Message
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 from .serializers import MessageSerializer
-from .utils import processApiService, DataCubeConnection, create_cs_db_meta, check_db, check_collection
+from .utils import processApiService, DataCubeConnection, create_cs_db_meta, check_db, check_collection, get_link_usernames
 import os
 import json
 from django.http import HttpResponse
@@ -16,8 +16,8 @@ sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
 app = socketio.WSGIApp(sio)
 thread = None
 
-api_key = os.getenv("API_KEY")
-if api_key is None:
+my_api_key = os.getenv("API_KEY")
+if my_api_key is None:
     raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
 data_cube = DataCubeConnection()
 
@@ -1271,6 +1271,7 @@ def create_public_room(sid, message):
         if check_collection(workspace_id, "public_room"):
             check_collection(workspace_id, "public_chat")
             
+            
 
             is_room = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=coll_name, filters={"name": name}, limit=1, offset=0)
 
@@ -1458,19 +1459,59 @@ def create_master_link(sid, message):
         job_name = message['job_name']
         url = "https://www.qrcodereviews.uxlivinglab.online/api/v3/qr-code/"
 
+        db_name = f"{company_id}_{job_name}"
+        coll_name = f"{company_id}_master_link"
+
+        is_First = False
+        available_links = []
+
+        check_collection(company_id, "master_link")
+        coll_response = data_cube.fetch_data(api_key=my_api_key,db_name=db_name, coll_name=coll_name, filters={"workspace_id": company_id}, limit=1, offset=0)
+        if coll_response['success']:
+            if not coll_response['data']:
+                available_links = links
+                is_First = True
+            else:
+                used_links = coll_response['data'][0]['public_username']
+                new_links = get_link_usernames(links)
+
+                unused_usernames = [username for username in new_links if username not in used_links]
+                available_links = [{'link': link_info['link']} for link_info in links if get_link_usernames([link_info])[0] in unused_usernames]
+                print(available_links)
+
+            if not available_links:
+                return sio.emit('master_link_response', {'data': 'All public_usernames in the links have been used', 'status': 'failure', 'operation': 'create_master_link'}, room=sid)
+
         payload = {
             "qrcode_type": "Link",
             "quantity": 1,
             "company_id": company_id,
-            "links": links,
+            "links": available_links,
             "document_name": job_name,
         }
 
         response = requests.post(url, json=payload)
 
         if response.status_code == 201:
-            # Successful response
-            return sio.emit('master_link_response', {'data': json.loads(response.text), 'status': 'success', 'operation': 'create_master_link'}, room=sid)
+            sio.emit('master_link_response', {'data': json.loads(response.text), 'status': 'success', 'operation': 'create_master_link'}, room=sid)
+
+            if is_First:
+                data = {
+                    "workspace_id": company_id,
+                    "public_username": get_link_usernames(available_links),  # Corrected variable name
+                }
+                add_response = data_cube.insert_data(api_key=my_api_key, db_name=db_name, coll_name=coll_name, data=data)
+                print(add_response)
+            else:
+                update_data = {
+                    "workspace_id": company_id,
+                    "public_username": used_links + unused_usernames,
+                }
+
+                add_response = data_cube.update_data(api_key=my_api_key, db_name=db_name, coll_name=coll_name, query={"workspace_id": company_id}, update_data=update_data)
+                print(add_response)
+
+            return
         else:
             # Error response
             return sio.emit('master_link_response', {'data': f"Error: {json.loads(response.text)}", 'status': 'failure', 'operation': 'create_master_link'}, room=sid)

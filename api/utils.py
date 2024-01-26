@@ -4,6 +4,7 @@ import json
 from enum import Enum
 from dotenv import load_dotenv
 load_dotenv()
+from urllib.parse import urlparse, parse_qs
 
 class DBCrudOperation(Enum):
     FETCH = "fetch"
@@ -144,7 +145,7 @@ api_key = os.getenv("API_KEY")
 #     raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
 data_cube = DataCubeConnection()
 
-# reponse = data_cube.fetch_data(api_key=api_key, db_name="dowellchat", coll_name="chat", filters={}, limit=1, offset=0)
+# reponse = data_cube.delete_data(api_key=api_key,db_name="6385c0f18eca0fb652c94558_customer_support", coll_name="6385c0f18eca0fb652c94558_master_link", query={})
 # print(reponse)
 # print(check_collection("646ba835ce27ae02d024a902", "server"))
 
@@ -162,3 +163,32 @@ def set_finalize(linkid):
     return response.text
 
 # print(set_finalize("6155348369150513646"))
+
+
+
+
+
+def get_link_usernames(links):
+    public_link_ids = []
+
+    # Loop through each link and extract public_link_id
+    for link_info in links:
+        link = link_info.get('link', '')
+        parsed_url = urlparse(link)
+        fragment_params = parse_qs(parsed_url.query)
+        public_link_id = fragment_params.get('public_link_id', [None])[0]
+        public_link_ids.append(public_link_id)
+
+    return public_link_ids
+
+
+# # List of example links from the payload
+# links = [
+#             {
+#             "link":"https://ll03-identity-dowell.github.io/100096-customer-support/?type=pulic_chat&public_link_id=jidj8tt924h&org_id=646ba835ce27ae02d024a902&category_id=65a118edc5b56cc2cab5e9b5&product=customer_support&link_id=8103606995632525806"                       
+#             },
+#             {
+#             "link":"https://ll03-identity-dowell.github.io/100096-customer-support/?type=pulic_chat&public_link_id=jidj8ai924h&org_id=646ba835ce27ae02d024a902&category_id=65a118edc5b56cc2cab5e9b5&product=customer_support&link_id=8103606995632525806"                       
+#             }
+# ]
+# print(get_link_usernames(links))
