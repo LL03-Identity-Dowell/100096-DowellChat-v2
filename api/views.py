@@ -970,6 +970,14 @@ def cs_get_server_category(sid, message):
                     return sio.emit('category_response', {'data': 'No Category found for this Server', 'status': 'failure', 'operation':'get_server_category'}, room=sid)
 
                 else:
+                    # Join the rooms named after each category
+                    for category in response['data']:
+                        category_name = category.get('_id', '')
+                        if category_name:
+                            sio.enter_room(sid, category_name)
+
+                            # Add more logic here if needed for handling new category rooms
+                    
                     return sio.emit('category_response', {'data': response['data'], 'status': 'success', 'operation':'get_server_category'}, room=sid)
             else:
                 return sio.emit('category_response', {'data': response['message'], 'status': 'failure', 'operation':'get_server_category'}, room=sid)
