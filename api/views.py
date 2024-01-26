@@ -1251,7 +1251,7 @@ def create_public_room(sid, message):
         coll_name = f"{workspace_id}_public_room"
 
         is_category = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=f"{workspace_id}_category", filters={"_id": category}, limit=1, offset=0)
-
+        
         data = {
                 "name": name,
                 "category": category,  
@@ -1289,7 +1289,8 @@ def create_public_room(sid, message):
                 new_room_date ={
                     '_id': response['data']['inserted_id'], 
                     'name': name, 
-                    'category': category}
+                    'category': category,
+                    'server':is_category['data'][0]['server_id']}
                 sio.emit('new_public_room', {'data': new_room_date, 'status': 'success', }, room=category)
                 
                 existing_rooms = is_category['data'][0].get('rooms', [])
