@@ -1035,7 +1035,7 @@ def cs_get_user_category(sid, message):
                             if category_name:
                                 sio.enter_room(sid, category_name)
 
-                                # Add more logic here if needed for handling new category rooms
+                               
                         return
 
         if check_collection(workspace_id, "category"):
@@ -1273,9 +1273,9 @@ def create_public_room(sid, message):
 
                     msg_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=f"{workspace_id}_public_chat", filters={"room_id": is_room['data'][0]['_id']}, limit=200, offset=0)
                     if msg_response['data']:
-                        sio.emit('public_message_response', {'data': msg_response['data'], 'status': 'success', 'operation': 'create_public_room'}, room=sid)
+                        sio.emit('public_message_response', {'data': msg_response['data'], 'room_id':is_room['data'][0]['_id'], 'status': 'success', 'operation': 'create_public_room'}, room=sid)
                     else:
-                        sio.emit('public_message_response', {'data': [], 'status': 'success', 'operation': 'create_public_room'}, room=sid)    
+                        sio.emit('public_message_response', {'data': [], 'room_id':is_room['data'][0]['_id'], 'status': 'success', 'operation': 'create_public_room'}, room=sid)    
                     return
 
 
