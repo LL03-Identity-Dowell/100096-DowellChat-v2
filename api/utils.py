@@ -149,7 +149,8 @@ data_cube = DataCubeConnection()
 # print(reponse)
 # print(check_collection("646ba835ce27ae02d024a902", "server"))
 
-# print(check_db("646ba835ce27ae02d024a902"))
+# reponse = data_cube.fetch_data(api_key=api_key,db_name="6385c0f18eca0fb652c94558_customer_support", coll_name="6385c0f18eca0fb652c94558_public_room", filters={},limit=200, offset=0)
+# print(reponse)
 
 def set_finalize(linkid):
     # print(linkid)

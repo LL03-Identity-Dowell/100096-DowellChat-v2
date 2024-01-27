@@ -1262,7 +1262,8 @@ def create_public_room(sid, message):
         
         data = {
                 "name": name,
-                "category": category,  
+                "category": category, 
+                "display_name": None, 
                 "is_active": True,        
                 "created_at": created_at, 
         }
@@ -1449,6 +1450,43 @@ def public_request_call(sid, message):
         error_message = str(e)
         return sio.emit('public_room_response', {'data': error_message, 'status': 'failure',
                                                'operation': 'public_request_call'}, room=sid)
+
+@sio.event
+def set_public_room_display_name(sid, message):
+    try:
+
+        room_id = message['room_id']
+        display_name = message['display_name']
+        
+
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_public_room"       
+
+
+        update_data = {
+                "display_name": display_name,
+        }
+
+        response = data_cube.update_data(api_key=api_key, db_name=db_name, coll_name=coll_name, query = {"_id": room_id}, update_data=update_data)     
+        
+        return_data = {
+             "display_name": display_name,
+             "_id": room_id
+        }
+        if response['success'] == True:
+            return sio.emit('public_room_response', {'data':return_data, 'status': 'success', 'operation':'set_display_name'}, room=sid)
+        else:
+            return sio.emit('public_room_response', {'data':"Error setting display name", 'status': 'failure', 'operation':'set_display_name'}, room=sid)
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('public_room_response', {'data': error_message, 'status': 'failure', 'operation':'set_display_name'}, room=sid)
+
+
 
 """ MASTER LINK EVENTS """
 @sio.event
