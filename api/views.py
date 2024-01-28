@@ -1344,8 +1344,13 @@ def public_join_room(sid, message):
                 msg_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=f"{workspace_id}_public_chat", filters={"room_id": room}, limit=200, offset=0)
                 if msg_response['data']:
                     sio.emit('public_message_response', {'data': msg_response['data'], 'status': 'success', 'operation': 'join_public_room'}, room=sid)
-                    # for message_data in msg_response['data']:
-                    #     sio.emit('public_message_response', {'data': message_data, 'status': 'success', 'operation': 'join_public_room'}, room=sid)
+                    
+                    #Mark the messages as read
+                    update_data = {
+                        'is_read': True, 
+                    }
+                    mark_read = data_cube.update_data(api_key=my_api_key, db_name=db_name, coll_name=f"{workspace_id}_public_chat", query={"room_id": room}, update_data=update_data)
+                    print(mark_read)
                 else:
                     sio.emit('public_message_response', {'data': [], 'status': 'success', 'operation': 'join_public_room'}, room=sid)    
                 return
@@ -1375,7 +1380,8 @@ def public_message_event(sid, message):
                     "room_id": room_id,
                     "message_data": message_data,
                     "author": user_id,
-                    "reply_to": reply_to,      
+                    "reply_to": reply_to, 
+                    "is_read": False,     
                     "created_at": created_at, 
         }
 
@@ -1626,6 +1632,12 @@ def remove_public_usernames(sid, message):
         return sio.emit('master_link_response', {'data': error_message, 'status': 'failure', 'operation': 'remove_public_usernames'}, room=sid)
 
 
+
+"""NOTIFICATION EVENTS"""
+@sio.event
+def get_user_rooms(sid):
+    rooms = sio.rooms(sid)
+    return sio.emit('user_rooms_response', {'rooms': list(rooms)}, room=sid)
 
 """PUBLIC RELEASE"""
 public_namespace = '/public'
