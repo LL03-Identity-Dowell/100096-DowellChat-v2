@@ -145,7 +145,7 @@ api_key = os.getenv("API_KEY")
 #     raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
 data_cube = DataCubeConnection()
 
-# reponse = data_cube.delete_data(api_key=api_key,db_name="6385c0f18eca0fb652c94558_customer_support", coll_name="6385c0f18eca0fb652c94558_public_room", query={})
+# reponse = data_cube.delete_data(api_key=api_key,db_name="6385c0f18eca0fb652c94558_customer_support", coll_name="6385c0f18eca0fb652c94558_category", query={"_id":"65b4ef7ac5b56cc2cabbbd0e"})
 # print(reponse)
 # print(check_collection("646ba835ce27ae02d024a902", "server"))
 
@@ -165,10 +165,6 @@ def set_finalize(linkid):
 
 # print(set_finalize("6155348369150513646"))
 
-
-
-
-
 def get_link_usernames(links):
     public_link_ids = []
 
@@ -185,6 +181,20 @@ def get_link_usernames(links):
 
     return public_link_ids
 
+
+def get_room_details(workspace_id, api_key, product, category_id):
+    db_name = f"{workspace_id}_{product}"
+    coll_name = f"{workspace_id}_public_room"
+
+    if check_collection(workspace_id, "category"):
+        response = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=coll_name, filters={"category": category_id}, limit=20, offset=0)
+        print(response)
+        if response['success']:
+            return response['data']
+        else:
+            return []
+    else:
+        return []
 
 # # # List of example links from the payload
 # links = [

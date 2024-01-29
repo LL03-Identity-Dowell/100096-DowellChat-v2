@@ -5,11 +5,12 @@ from .models import Message
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 from .serializers import MessageSerializer
-from .utils import processApiService, DataCubeConnection, create_cs_db_meta, check_db, check_collection, get_link_usernames
+from .utils import processApiService, DataCubeConnection, create_cs_db_meta, check_db, check_collection, get_link_usernames,get_room_details
 import os
 import json
 from django.http import HttpResponse
 import socketio
+
 
 
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
@@ -970,15 +971,31 @@ def cs_get_server_category(sid, message):
                     return sio.emit('category_response', {'data': 'No Category found for this Server', 'status': 'failure', 'operation':'get_server_category'}, room=sid)
 
                 else:
-                    # Join the rooms named after each category
+                    formatted_response = []
+
                     for category in response['data']:
                         category_name = category.get('_id', '')
+                        
+                        rooms_details = get_room_details(workspace_id, api_key, product, category_name)
+                        
+                        formatted_category = {
+                            "_id": category['_id'],
+                            "name": category['name'],
+                            "rooms": rooms_details,
+                            "server_id": category['server_id'],
+                            "member_list": category['member_list'],
+                            "private": category['private'],
+                            "created_at": category['created_at']
+                        }
+
+                        formatted_response.append(formatted_category)
+
                         if category_name:
                             sio.enter_room(sid, category_name)
 
-                            # Add more logic here if needed for handling new category rooms
+                        
                     
-                    return sio.emit('category_response', {'data': response['data'], 'status': 'success', 'operation':'get_server_category'}, room=sid)
+                    return sio.emit('category_response', {'data': formatted_response, 'status': 'success', 'operation':'get_server_category'}, room=sid)
             else:
                 return sio.emit('category_response', {'data': response['message'], 'status': 'failure', 'operation':'get_server_category'}, room=sid)
 
