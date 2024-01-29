@@ -1496,6 +1496,25 @@ def set_public_room_display_name(sid, message):
 
 """ MASTER LINK EVENTS """
 @sio.event
+def get_used_usernames(sid, message):
+    try:
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_master_link"
+
+        check_collection(workspace_id, "master_link")
+        response = data_cube.fetch_data(api_key=my_api_key,db_name=db_name, coll_name=coll_name, filters={"workspace_id": workspace_id}, limit=1, offset=0)
+        if response['success']:
+            return sio.emit('master_link_response', {'data': response['data'], 'status': 'success', 'operation': 'get_used_usernames'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('master_link_response', {'data': error_message, 'status': 'failure', 'operation': 'get_used_usernames'}, room=sid)
+
+@sio.event
 def create_master_link(sid, message):
     try:
         company_id = message['workspace_id']
@@ -1513,24 +1532,18 @@ def create_master_link(sid, message):
         coll_response = data_cube.fetch_data(api_key=my_api_key,db_name=db_name, coll_name=coll_name, filters={"workspace_id": company_id}, limit=1, offset=0)
         if coll_response['success']:
             if not coll_response['data']:
-                available_links = links
                 is_First = True
             else:
                 used_links = coll_response['data'][0]['public_username']
                 new_links = get_link_usernames(links)
 
-                unused_usernames = [username for username in new_links if username not in used_links]
-                available_links = [{'link': link_info['link']} for link_info in links if get_link_usernames([link_info])[0] in unused_usernames]
-                print(available_links)
 
-            if not available_links:
-                return sio.emit('master_link_response', {'data': 'All public_usernames in the links have been used', 'status': 'failure', 'operation': 'create_master_link'}, room=sid)
 
         payload = {
             "qrcode_type": "Link",
             "quantity": 1,
             "company_id": company_id,
-            "links": available_links,
+            "links": links,
             "document_name": job_name,
         }
 
@@ -1549,7 +1562,7 @@ def create_master_link(sid, message):
             else:
                 update_data = {
                     "workspace_id": company_id,
-                    "public_username": used_links + unused_usernames,
+                    "public_username": used_links + new_links,
                 }
 
                 add_response = data_cube.update_data(api_key=my_api_key, db_name=db_name, coll_name=coll_name, query={"workspace_id": company_id}, update_data=update_data)
