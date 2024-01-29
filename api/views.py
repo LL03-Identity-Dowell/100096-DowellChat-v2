@@ -1526,7 +1526,7 @@ def create_master_link(sid, message):
         coll_name = f"{company_id}_master_link"
 
         is_First = False
-        available_links = []
+        
 
         check_collection(company_id, "master_link")
         coll_response = data_cube.fetch_data(api_key=my_api_key,db_name=db_name, coll_name=coll_name, filters={"workspace_id": company_id}, limit=1, offset=0)
@@ -1555,7 +1555,7 @@ def create_master_link(sid, message):
             if is_First:
                 data = {
                     "workspace_id": company_id,
-                    "public_username": get_link_usernames(available_links),  # Corrected variable name
+                    "public_username": get_link_usernames(links),  # Corrected variable name
                 }
                 add_response = data_cube.insert_data(api_key=my_api_key, db_name=db_name, coll_name=coll_name, data=data)
                 print(add_response)

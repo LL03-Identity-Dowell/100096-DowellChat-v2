@@ -145,7 +145,7 @@ api_key = os.getenv("API_KEY")
 #     raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
 data_cube = DataCubeConnection()
 
-# reponse = data_cube.delete_data(api_key=api_key,db_name="6385c0f18eca0fb652c94558_customer_support", coll_name="6385c0f18eca0fb652c94558_master_link", query={})
+# reponse = data_cube.delete_data(api_key=api_key,db_name="6385c0f18eca0fb652c94558_customer_support", coll_name="6385c0f18eca0fb652c94558_public_room", query={})
 # print(reponse)
 # print(check_collection("646ba835ce27ae02d024a902", "server"))
 
