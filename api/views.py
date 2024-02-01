@@ -1,5 +1,6 @@
 async_mode = 'gevent'
 # async_mode = "threading"
+from datetime import datetime
 import requests
 from .models import Message
 from rest_framework.decorators import api_view
@@ -10,6 +11,9 @@ import os
 import json
 from django.http import HttpResponse
 import socketio
+import base64
+import re
+from django.conf import settings
 
 
 
@@ -836,76 +840,118 @@ def channel_chat(sid, message):
         return sio.emit('channel_chat_response', {'data': error_message, 'status': 'failure'}, room=channel_id)
 
 
-@sio.event
-def channel_message_event(sid, message):
-    try:
-        channel_id = message['channel_id']
-        message_data = message['message_data']
-        user_id = message['user_id']
-        name = message['name']
-        # audio = message['audio']
-        # video = message['video']
-        # document = message['document']
-        reply_to = message['reply_to']
-        created_at = message['created_at']
+# @sio.event
+# def channel_message_event(sid, message):
+#     try:
+#         channel_id = message['channel_id']
+#         message_data = message['message_data']
+#         file = message['file']
+#         user_id = message['user_id']
+#         name = message['name']
+#         reply_to = message['reply_to']
+#         created_at = message['created_at']
 
-
-        # data_folder = os.path.join(settings.BASE_DIR, 'media', 'data')
-        # if not os.path.exists(data_folder):
-        #     os.makedirs(data_folder)
-
-        # def save_file(file_data, file_type):
-        #     if file_data:
-        #         # Decode the base64 data
-        #         file_data_decoded = base64.b64decode(file_data.split(',')[1])
-
-        #         # Generate a unique filename
-        #         file_extension = file_data.split('/')[-1].split('.')[-1]
-        #         file_name = f"{user_id}_{''.join(random.choice(string.ascii_lowercase + string.digits) for i in range(12))}.{file_extension}"
-
-        #         # Specify the file path within the media directory
-        #         file_path = os.path.join(settings.MEDIA_ROOT, file_type, file_name)
-
-        #         # Save the file using Django's default storage
-        #         with default_storage.open(file_path, 'wb') as file:
-        #             file.write(file_data_decoded)
-
-        #         # Return the URL
-        #         file_url = default_storage.url(file_path)
-        #         return file_url
-
-        #     return None
 
         
-        # audio_url = save_file(audio, 'audio')
-        # video_url = save_file(video, 'video') 
-        # document_url = save_file(document, 'document')
+#         data = {
+#                     "channel_id": channel_id,
+#                     "message_data": message_data,
+#                     "file": file,
+#                     "author": {
+#                         "user_id": user_id,
+#                         "name": name
+#                     },
+#                     "reply_to": reply_to, 
+#                     "is_read": False,       
+#                     "created_at": created_at, 
+#             }
+
+#         response = data_cube.insert_data(db_name="dowellchat", coll_name="chat", data=data)
         
-        data = {
-                    "channel_id": channel_id,
-                    "message_data": message_data,
-                    "author": {
-                        "user_id": user_id,
-                        "name": name
-                    },
-                    # "audio": audio_url,
-                    # "video": video_url,
-                    # "document": document_url,
-                    "reply_to": reply_to,        
-                    "created_at": created_at, 
-            }
+#         if response['success'] == True:
+#             return sio.emit('channel_chat_response', {'data':data, 'status': 'success'}, room=sid)
+#         else:
+#             return sio.emit('channel_chat_response', {'data':"Error sending message", 'status': 'failure'}, room=sid)
+#     except Exception as e:
+#         error_message = str(e)
+#         return sio.emit('channel_chat_response', {'data': error_message, 'status': 'failure'}, room=sid)
 
-        response = data_cube.insert_data(db_name="dowellchat", coll_name="chat", data=data)
+# def sanitize_filename(filename):
+#     # Remove any characters that are not alphanumeric, underscore, or a dot
+#     sanitized_filename = re.sub(r'[^\w.]+', '_', filename)
+#     return sanitized_filename
+
+# def get_safe_timestamp():
+#     # Use a timestamp without characters that may cause issues in Windows
+#     return datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')[:-3]
+
+# @sio.event
+# def channel_message_event(sid, message):
+#     try:
+#         channel_id = message['channel_id']
+#         message_data = message['message_data']
+#         file_data = message.get('file',None) 
+#         user_id = message['user_id']
+#         name = message['name']
+#         reply_to = message['reply_to']
+#         created_at = message['created_at']
+
+#         workspace_id = message['workspace_id']
+#         api_key = message['api_key']
+#         product = message['product']
         
-        if response['success'] == True:
-            return sio.emit('channel_chat_response', {'data':data, 'status': 'success'}, room=sid)
-        else:
-            return sio.emit('channel_chat_response', {'data':"Error sending message", 'status': 'failure'}, room=sid)
-    except Exception as e:
-        error_message = str(e)
-        return sio.emit('channel_chat_response', {'data': error_message, 'status': 'failure'}, room=sid)
+#         db_name = f"{workspace_id}_{product}"
+#         coll_name = f"{workspace_id}_channel_chat"
 
 
+#         print(file_data)
+#         print("Checkpoint 0")
+#         # Handling file upload
+#         file_path = None
+#         if file_data['content'] != None:
+#             try:
+#                 print("Checkpoint 1")
+#                 # Decode base64 and sanitize the file name
+#                 file_content = base64.b64decode(file_data['content'])
+#                 sanitized_filename = sanitize_filename(file_data['filename'])
+#                 timestamp = get_safe_timestamp()
+#                 file_name = f"{user_id}_{timestamp}_{sanitized_filename}"  
+#                 file_path = os.path.join('media', file_name)
+
+#                 with open(file_path, 'wb') as file:
+#                     file.write(file_content)
+
+#                 file_path = f"{settings.ENDPOINT_URL}\{file_path}"
+            
+                
+#             except Exception as e:
+#                 print(str(e))
+#                 return sio.emit('channel_chat_response', {'data': f"Error saving file: {str(e)}", 'status': 'failure'}, room=sid)
+
+#         data = {
+#             "channel_id": channel_id,
+#             "message_data": message_data,
+#             "file": file_path,
+#             "author": {
+#                 "user_id": user_id,
+#                 "name": name
+#             },
+#             "reply_to": reply_to,
+#             "is_read": False,
+#             "created_at": created_at,
+#         }
+        
+
+#         response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
+
+#         if response['success']:
+#             return sio.emit('channel_chat_response', {'data': data, 'status': 'success'}, room=sid)
+#         else:
+#             return sio.emit('channel_chat_response', {'data': "Error sending message", 'status': 'failure'}, room=sid)
+#     except Exception as e:
+#         error_message = str(e)
+#         return sio.emit('channel_chat_response', {'data': error_message, 'status': 'failure'}, room=sid)
+    
 """CUSTOMER SUPPORT SECTION"""
 @sio.event
 def cs_create_category(sid, message):
@@ -943,8 +989,9 @@ def cs_create_category(sid, message):
             response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
             
             if response['success'] == True:
+                sio.enter_room(sid, response['data']['inserted_id'])
                 return sio.emit('category_response', {'data':response['data'], 'status': 'success', 'operation':'create_category'}, room=sid)
-            
+
             else:
                 return sio.emit('category_response', {'data':"Error creating Category", 'status': 'failure', 'operation':'create_category'}, room=sid)
     except Exception as e:
@@ -995,7 +1042,7 @@ def cs_get_server_category(sid, message):
 
                         
                     
-                    return sio.emit('category_response', {'data': formatted_response, 'status': 'success', 'operation':'get_server_category'}, room=sid)
+                    return sio.emit('category_response', {'data': response['data'], 'status': 'success', 'operation':'get_server_category'}, room=sid)
             else:
                 return sio.emit('category_response', {'data': response['message'], 'status': 'failure', 'operation':'get_server_category'}, room=sid)
 

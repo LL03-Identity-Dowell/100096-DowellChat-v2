@@ -1,0 +1,62 @@
+Coding for the task, create master link event cont
+coding for the task, test client for the create_master_link event cont'd
+Testing the create_master_link event
+Coding for the task, set_finalize event cont
+Coding for the task, test client for the set_finalize event
+testing the set_finalize event
+Adding Extra Payload to the Create Public Room event
+Added operation to the public message event
+Making Changes to the public_join_room event
+
+
+Attending meeting and discussed
+Coding for task
+Testing Product xxxx for xxx
+
+Add server image
+
+user_collection
+client_admin_id
+user_id
+role
+
+check if user is present:
+add
+if not
+insert
+
+This part is for user management
+Secondly we are interchanging category with channel
+thirdly are we having a different setup or the current living lab chat
+
+codesandbox.io
+server-category-channel-rooms
+
+org_id/workspace_id and api_key
+
+db_name: workspace_id_customer_support
+collection_name: workspace_id_collection_name
+
+
+customer_support meta
+
+1234
+
+NOTIFICATION SYSTEM PART 1
+1. Get a list of the rooms a user is listening to
+2. Get the room a user is currently on
+3. When a new public_message event is emitted do the following:
+	i. Check if the message.room_id is among the rooms the user is listening to
+	ii. Check if the message.room_id is equal to the current_room
+		if yes, do nothing
+		else, send a notification to the user that there is a new message in room_id
+
+
+NOTIFICATION SYSTEM PART 2
+DO STEP ONE AND TWO
+A notification_response will be emitted anytime a new message is sent, so when a new notification is emitted:
+you do the following:
+Check if the notification.room_id is amount the room the user is listening to
+Check if the notification.room_id is equal to the current_room
+		if yes, do nothing
+		else, send a notification to the user that there is a new message in room_id
