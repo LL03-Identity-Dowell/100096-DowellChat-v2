@@ -5,6 +5,8 @@ from enum import Enum
 from dotenv import load_dotenv
 load_dotenv()
 from urllib.parse import urlparse, parse_qs
+import re
+from datetime import datetime
 
 class DBCrudOperation(Enum):
     FETCH = "fetch"
@@ -195,11 +197,17 @@ def get_room_details(workspace_id, api_key, product, category_id):
             return []
     else:
         return []
+    
+def sanitize_filename(filename):
+    sanitized_filename = re.sub(r'[^\w.]+', '_', filename)
+    return sanitized_filename
 
-# # # List of example links from the payload
-# links = [
-#             {
-#             "link":"https://ll03-identity-dowell.github.io/100096-customer-support/#?type=public_chat&public_link_id=OovVv67mTjmY&org_id=6385c0f18eca0fb652c94558&category_id=65b40562c5b56cc2cabba113&product=customer_support&api_key=1b834e07-c68b-4bf6-96dd-ab7cdc62f07f&link_id=3175189911150006766"                       
-#             }
-# ]
-# print(get_link_usernames(links))
+def get_safe_timestamp():
+    return datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')[:-3]
+
+
+# workspace_id = "6385c0f18eca0fb652c94558"
+# api_key = "1b834e07-c68b-4bf6-96dd-ab7cdc62f07f"
+# product="customer_support"
+# category_id = "65ba4d6ec5b56cc2cabc9221"
+

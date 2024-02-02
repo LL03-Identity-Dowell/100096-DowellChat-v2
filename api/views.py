@@ -1,18 +1,26 @@
 async_mode = 'gevent'
 # async_mode = "threading"
-from datetime import datetime
 import requests
 from .models import Message
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 from .serializers import MessageSerializer
-from .utils import processApiService, DataCubeConnection, create_cs_db_meta, check_db, check_collection, get_link_usernames,get_room_details
+from .utils import (
+    processApiService, 
+    DataCubeConnection, 
+    create_cs_db_meta, 
+    check_db, 
+    check_collection, 
+    get_link_usernames,
+    get_room_details, 
+    get_safe_timestamp,
+    sanitize_filename
+    )
 import os
 import json
 from django.http import HttpResponse
 import socketio
 import base64
-import re
 from django.conf import settings
 
 
@@ -876,81 +884,76 @@ def channel_chat(sid, message):
 #         error_message = str(e)
 #         return sio.emit('channel_chat_response', {'data': error_message, 'status': 'failure'}, room=sid)
 
-# def sanitize_filename(filename):
-#     # Remove any characters that are not alphanumeric, underscore, or a dot
-#     sanitized_filename = re.sub(r'[^\w.]+', '_', filename)
-#     return sanitized_filename
 
-# def get_safe_timestamp():
-#     # Use a timestamp without characters that may cause issues in Windows
-#     return datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')[:-3]
+@sio.event
+def channel_message_event(sid, message):
+    try:
+        channel_id = message['channel_id']
+        message_data = message.get('message_data', None)
+        file_data = message.get('file',None) 
+        user_id = message['user_id']
+        name = message['name']
+        reply_to = message['reply_to']
+        created_at = message['created_at']
 
-# @sio.event
-# def channel_message_event(sid, message):
-#     try:
-#         channel_id = message['channel_id']
-#         message_data = message['message_data']
-#         file_data = message.get('file',None) 
-#         user_id = message['user_id']
-#         name = message['name']
-#         reply_to = message['reply_to']
-#         created_at = message['created_at']
-
-#         workspace_id = message['workspace_id']
-#         api_key = message['api_key']
-#         product = message['product']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
         
-#         db_name = f"{workspace_id}_{product}"
-#         coll_name = f"{workspace_id}_channel_chat"
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_channel_chat"
 
 
-#         print(file_data)
-#         print("Checkpoint 0")
-#         # Handling file upload
-#         file_path = None
-#         if file_data['content'] != None:
-#             try:
-#                 print("Checkpoint 1")
-#                 # Decode base64 and sanitize the file name
-#                 file_content = base64.b64decode(file_data['content'])
-#                 sanitized_filename = sanitize_filename(file_data['filename'])
-#                 timestamp = get_safe_timestamp()
-#                 file_name = f"{user_id}_{timestamp}_{sanitized_filename}"  
-#                 file_path = os.path.join('media', file_name)
+        print(file_data)
+        print("Checkpoint 0")
+        # Handling file upload
+        file_path = None
+        if file_data['content'] != None and file_data['filename'] != None:
+            try:
+                print("Checkpoint 1")
+                # Decode base64 and sanitize the file name
+                file_content = base64.b64decode(file_data['content'])
+                sanitized_filename = sanitize_filename(file_data['filename'])
+                timestamp = get_safe_timestamp()
+                file_name = f"{user_id}_{timestamp}_{sanitized_filename}"  
+                file_path = os.path.join('media', file_name)
 
-#                 with open(file_path, 'wb') as file:
-#                     file.write(file_content)
+                with open(file_path, 'wb') as file:
+                    file.write(file_content)
 
-#                 file_path = f"{settings.ENDPOINT_URL}\{file_path}"
+                file_path = f"{settings.ENDPOINT_URL}\{file_path}"
             
                 
-#             except Exception as e:
-#                 print(str(e))
-#                 return sio.emit('channel_chat_response', {'data': f"Error saving file: {str(e)}", 'status': 'failure'}, room=sid)
+            except Exception as e:
+                print(str(e))
+                return sio.emit('channel_chat_response', {'data': f"Error saving file: {str(e)}", 'status': 'failure'}, room=sid)
+        else:
+            if message_data == None or message_data == "":
+                return sio.emit('channel_chat_response', {'data': f"Error sending message: Please provide message_data or attach a file", 'status': 'failure'}, room=sid)
 
-#         data = {
-#             "channel_id": channel_id,
-#             "message_data": message_data,
-#             "file": file_path,
-#             "author": {
-#                 "user_id": user_id,
-#                 "name": name
-#             },
-#             "reply_to": reply_to,
-#             "is_read": False,
-#             "created_at": created_at,
-#         }
+        data = {
+            "channel_id": channel_id,
+            "message_data": message_data,
+            "file": file_path,
+            "author": {
+                "user_id": user_id,
+                "name": name
+            },
+            "reply_to": reply_to,
+            "is_read": False,
+            "created_at": created_at,
+        }
         
 
-#         response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
+        response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
 
-#         if response['success']:
-#             return sio.emit('channel_chat_response', {'data': data, 'status': 'success'}, room=sid)
-#         else:
-#             return sio.emit('channel_chat_response', {'data': "Error sending message", 'status': 'failure'}, room=sid)
-#     except Exception as e:
-#         error_message = str(e)
-#         return sio.emit('channel_chat_response', {'data': error_message, 'status': 'failure'}, room=sid)
+        if response['success']:
+            return sio.emit('channel_chat_response', {'data': data, 'status': 'success'}, room=sid)
+        else:
+            return sio.emit('channel_chat_response', {'data': "Error sending message", 'status': 'failure'}, room=sid)
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('channel_chat_response', {'data': error_message, 'status': 'failure'}, room=sid)
     
 """CUSTOMER SUPPORT SECTION"""
 @sio.event
@@ -1469,6 +1472,46 @@ def public_message_event(sid, message):
         return sio.emit('public_message_response', {'data': error_message, 'status': 'failure'}, room=room_id)
 
 
+# @sio.event
+# def auto_join_room(sid, message):
+#     try:
+#         user_id = message['user_id']
+#         workspace_id = message['workspace_id']
+#         api_key = message['api_key']
+#         product = message['product']
+
+#         db_name = f"{workspace_id}_{product}"
+#         coll_name_category = f"{workspace_id}_category"
+
+#         # Query to get the categories where the user is a member
+#         response_category = data_cube.fetch_data(
+#             api_key=api_key,
+#             db_name=db_name,
+#             coll_name=coll_name_category,
+#             filters={"member_list": {"$in": [user_id]}},
+#             limit=199,
+#             offset=0
+#         )
+
+#         if response_category['success'] and response_category['data']:
+#             for category in response_category['data']:
+#                 # Join the rooms in the category
+#                 for room_id in category.get('rooms', []):
+#                     sio.enter_room(sid, str(room_id))
+
+#             # Add more logic here if needed for handling joined rooms
+#             return sio.emit('auto_join_response', {'data': 'Rooms joined successfully', 'status': 'success',
+#                                                    'operation': 'auto_join_room'}, room=sid)
+#         else:
+#             # No category found for the user
+#             return sio.emit('auto_join_response', {'data': 'No category found for the user', 'status': 'failure',
+#                                                    'operation': 'auto_join_room'}, room=sid)
+
+#     except Exception as e:
+#         error_message = str(e)
+#         return sio.emit('auto_join_response', {'data': error_message, 'status': 'failure',
+#                                                'operation': 'auto_join_room'}, room=sid)
+
 @sio.event
 def auto_join_room(sid, message):
     try:
@@ -1478,36 +1521,81 @@ def auto_join_room(sid, message):
         product = message['product']
 
         db_name = f"{workspace_id}_{product}"
+        coll_name_server = f"{workspace_id}_server"
         coll_name_category = f"{workspace_id}_category"
+        coll_name_public_chat = f"{workspace_id}_public_chat"
 
-        # Query to get the categories where the user is a member
-        response_category = data_cube.fetch_data(
+        # Query to get all servers where the user is a member
+        response_servers = data_cube.fetch_data(
             api_key=api_key,
             db_name=db_name,
-            coll_name=coll_name_category,
+            coll_name=coll_name_server,
             filters={"member_list": {"$in": [user_id]}},
-            limit=199,
+            limit=20,
             offset=0
         )
 
-        if response_category['success'] and response_category['data']:
-            for category in response_category['data']:
-                # Join the rooms in the category
-                for room_id in category.get('rooms', []):
-                    sio.enter_room(sid, str(room_id))
+        result_data = []  
 
-            # Add more logic here if needed for handling joined rooms
-            return sio.emit('auto_join_response', {'data': 'Rooms joined successfully', 'status': 'success',
+        if response_servers['success'] and response_servers['data']:
+            for server in response_servers['data']:
+                server_data = {"server_id": server["_id"], "category": []}
+
+                # Get the categories in the server
+                response_category = data_cube.fetch_data(
+                    api_key=api_key,
+                    db_name=db_name,
+                    coll_name=coll_name_category,
+                    filters={"server_id": str(server_data["server_id"]), "member_list": {"$in": [user_id]}},
+                    limit=199,
+                    offset=0  
+                )
+
+                if response_category['success'] and response_category['data']:
+                    for category in response_category['data']:
+                        category_data = {"_id": category["_id"], "rooms": []}
+
+                        # Get the rooms in the category
+                        for room_id in category.get('rooms', []):
+                            sio.enter_room(sid, str(room_id))
+
+                            # Retrieve unread message count for the room
+                            unread_messages = data_cube.fetch_data(
+                                api_key=api_key,
+                                db_name=db_name,
+                                coll_name=coll_name_public_chat,
+                                filters={"room_id": str(room_id), "is_read": False},
+                                limit=1000,
+                                offset=0
+                            )
+
+                            unread_message_count = len(unread_messages.get('data', []))
+
+                            room_data = {
+                                "_id": {"$oid": room_id},
+                                "unread_message": unread_message_count,
+                            }
+
+                            category_data["rooms"].append(room_data)
+
+                        server_data["category"].append(category_data)
+
+                    result_data.append(server_data)
+
+
+            return sio.emit('auto_join_response', {'data': result_data, 'status': 'success',
                                                    'operation': 'auto_join_room'}, room=sid)
+
         else:
-            # No category found for the user
-            return sio.emit('auto_join_response', {'data': 'No category found for the user', 'status': 'failure',
+
+            return sio.emit('auto_join_response', {'data': 'No servers found for the user', 'status': 'failure',
                                                    'operation': 'auto_join_room'}, room=sid)
 
     except Exception as e:
         error_message = str(e)
         return sio.emit('auto_join_response', {'data': error_message, 'status': 'failure',
                                                'operation': 'auto_join_room'}, room=sid)
+
 
 
 @sio.event
