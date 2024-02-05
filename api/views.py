@@ -1,5 +1,5 @@
 async_mode = 'gevent'
-# async_mode = "threading"
+async_mode = "threading"
 import requests
 from .models import Message
 from rest_framework.decorators import api_view
@@ -26,6 +26,10 @@ from django.conf import settings
 
 
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
+sio.instrument(auth={
+    'username': 'admin',
+    'password': os.getenv("ADMIN_PASSWORD"),
+})
 app = socketio.WSGIApp(sio)
 thread = None
 

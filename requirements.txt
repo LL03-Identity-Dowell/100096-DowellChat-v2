@@ -5,9 +5,9 @@ h11==0.14.0
 Django==4.1
 django-cors-headers==3.13.0
 djangorestframework==3.14.0
-python-engineio==4.7.1
-python-socketio==5.8.0
-simple-websocket==0.10.1
+python-engineio
+python-socketio
+simple-websocket
 wsproto==1.2.0
 gevent==21.8.0  # Required for the gevent integration with uWSGI
 #uwsgi==2.0.20  # Required for running the application with uWSGI
