@@ -1,5 +1,5 @@
 async_mode = 'gevent'
-async_mode = "threading"
+#async_mode = "threading"
 import requests
 from .models import Message
 from rest_framework.decorators import api_view
