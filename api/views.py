@@ -1,5 +1,5 @@
 async_mode = 'gevent'
-#async_mode = "threading"
+# async_mode = "threading"
 import requests
 from .models import Message
 from rest_framework.decorators import api_view
@@ -1049,7 +1049,7 @@ def cs_get_server_category(sid, message):
 
                         
                     
-                    return sio.emit('category_response', {'data': response['data'], 'status': 'success', 'operation':'get_server_category'}, room=sid)
+                    return sio.emit('category_response', {'data': formatted_response, 'status': 'success', 'operation':'get_server_category'}, room=sid)
             else:
                 return sio.emit('category_response', {'data': response['message'], 'status': 'failure', 'operation':'get_server_category'}, room=sid)
 
