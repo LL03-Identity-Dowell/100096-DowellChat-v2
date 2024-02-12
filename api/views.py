@@ -1291,6 +1291,7 @@ def create_public_room(sid, message):
         name = message['public_link_id']
         category = message['category_id']
         created_at = message['created_at']
+        linkid = message['linkid']
         workspace_id = message['workspace_id']
         api_key = message['api_key']
         product = message['product']
@@ -1304,15 +1305,13 @@ def create_public_room(sid, message):
                 "name": name,
                 "category": category, 
                 "display_name": None, 
-                "is_active": True,        
+                "is_active": True,
+                "linkid": linkid,        
                 "created_at": created_at, 
-        }
-        
+        }        
 
         if check_collection(workspace_id, "public_room"):
-            check_collection(workspace_id, "public_chat")
-            
-            
+            check_collection(workspace_id, "public_chat")   
 
             is_room = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=coll_name, filters={"name": name}, limit=1, offset=0)
 
@@ -1340,7 +1339,10 @@ def create_public_room(sid, message):
                     '_id': response['data']['inserted_id'], 
                     'name': name, 
                     'category': category,
-                    'server':is_category['data'][0]['server_id']}
+                    'server':is_category['data'][0]['server_id'],
+                    'linkid': linkid
+                    }
+
                 sio.emit('new_public_room', {'data': new_room_date, 'status': 'success', }, room=category)
                 
                 existing_rooms = is_category['data'][0].get('rooms', [])
