@@ -808,7 +808,7 @@ def endCall(sid):
 
 """CHANNEL CHAT SECTION"""
 @sio.event
-def join_channel_chat(sid, message):
+def auto_join_channel_chat(sid, message):
     user_id = message['user_id']
 
     # Check if the user is connected
@@ -817,77 +817,46 @@ def join_channel_chat(sid, message):
 
         if response['success']:
             for channel in response['data']:
-                room_name = str(channel['_id'])
+                channel_id = str(channel['_id'])
 
                 # Make the user join the room
-                sio.enter_room(sid, room_name)
-                # sio.emit('joined_room', {'room_name': f"{sid} joined room {room_name}"}, room=sid)
-                
-    # sio.enter_room(sid, room)
-    # messages = Message.objects.filter(room_id=message['room']).all()
-    # sio.emit('my_response', {'data': f"{sid} Joined the Room",  'count': 0}, room=room, skip_sid=sid)
-    # if messages.count()==0:
-    #     sio.emit('my_response', {'data': "Hey how may i help you",  'count': 0}, room=sid)
-    # else:
-    #     for i in messages:
-    #         sio.emit('my_response', {'data': str(i.message_data),  'count': 0}, room=sid)
+                sio.enter_room(sid, channel_id)
+                             
                 
 @sio.event
-def channel_chat(sid, message):
+def join_channel_chat(sid, message):
     try:
         channel_id = message['channel_id']
-        response = data_cube.fetch_data(db_name="dowellchat", coll_name="chat", filters={"channel_id": channel_id}, limit=100, offset=0)
-        
-        if response['success']:
-            if response['data']:
-                return sio.emit('channel_chat_response', {'data': response['data'], 'status': 'success'}, room=sid)
-            else:
-                return sio.emit('channel_chat_response', {'data': "This is the beginning of this channel", 'status': 'success'}, room=sid)
-        else:
-            return sio.emit('channel_chat_response', {'data': "This is the beginning of this channel", 'status': 'success', }, room=sid)
-            
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
 
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{workspace_id}_channel"
+        
+        response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"_id": channel_id}, limit=1, offset=0)
+
+        if response['success']:
+            if not response['data']:
+                return sio.emit('channel_chat_response', {'data': 'No Channel found ', 'status': 'failure', 'operation':'join_channel_chat'}, room=sid)
+            else:
+                sio.enter_room(sid, channel_id)
+                msg_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=f"{workspace_id}_channel_chat", filters={"channel_id": channel_id}, limit=200, offset=0)
+                if msg_response['data']:
+                    sio.emit('channel_chat_response', {'data': msg_response['data'], 'status': 'success', 'operation': 'join_channel_chat'}, room=sid)
+                    
+                    #Mark the messages as read
+                    update_data = {
+                        'is_read': True, 
+                    }
+                    mark_read = data_cube.update_data(api_key=my_api_key, db_name=db_name, coll_name=f"{workspace_id}_channel_chat", query={"channel_id": channel_id}, update_data=update_data)
+                else:
+                    sio.emit('channel_chat_response', {'data': [], 'status': 'success', 'operation': 'join_channel_chat'}, room=sid)    
+                return
+                
     except Exception as e:
         error_message = str(e)
         return sio.emit('channel_chat_response', {'data': error_message, 'status': 'failure'}, room=channel_id)
-
-
-# @sio.event
-# def channel_message_event(sid, message):
-#     try:
-#         channel_id = message['channel_id']
-#         message_data = message['message_data']
-#         file = message['file']
-#         user_id = message['user_id']
-#         name = message['name']
-#         reply_to = message['reply_to']
-#         created_at = message['created_at']
-
-
-        
-#         data = {
-#                     "channel_id": channel_id,
-#                     "message_data": message_data,
-#                     "file": file,
-#                     "author": {
-#                         "user_id": user_id,
-#                         "name": name
-#                     },
-#                     "reply_to": reply_to, 
-#                     "is_read": False,       
-#                     "created_at": created_at, 
-#             }
-
-#         response = data_cube.insert_data(db_name="dowellchat", coll_name="chat", data=data)
-        
-#         if response['success'] == True:
-#             return sio.emit('channel_chat_response', {'data':data, 'status': 'success'}, room=sid)
-#         else:
-#             return sio.emit('channel_chat_response', {'data':"Error sending message", 'status': 'failure'}, room=sid)
-#     except Exception as e:
-#         error_message = str(e)
-#         return sio.emit('channel_chat_response', {'data': error_message, 'status': 'failure'}, room=sid)
-
 
 @sio.event
 def channel_message_event(sid, message):
