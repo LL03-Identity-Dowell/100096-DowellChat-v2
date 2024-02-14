@@ -88,14 +88,24 @@ def get_user_servers(sid, message):
 
         if check_collection(workspace_id, "server"):
 
-            response = data_cube.fetch_data(
-                api_key=api_key,
-                db_name=db_name,
-                coll_name=coll_name,
-                filters={"$or": [{"owner": user_id}, {"member_list": {"$in": [user_id]}}]},
-                limit=199,
-                offset=0
-            )
+            if product == "customer_support":
+                response = data_cube.fetch_data(
+                    api_key=api_key,
+                    db_name=db_name,
+                    coll_name=coll_name,
+                    filters={},
+                    limit=199,
+                    offset=0
+                )
+            else:
+                response = data_cube.fetch_data(
+                    api_key=api_key,
+                    db_name=db_name,
+                    coll_name=coll_name,
+                    filters={"$or": [{"owner": user_id}, {"member_list": {"$in": [user_id]}}]},
+                    limit=199,
+                    offset=0
+                )
 
             if response['success']:
                 if not response['data']:
