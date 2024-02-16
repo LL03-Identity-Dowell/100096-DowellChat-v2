@@ -155,27 +155,21 @@ data_cube = DataCubeConnection()
 # print(reponse)
 
 def set_finalize(linkid):
-    # print(linkid)
     url = f"https://www.qrcodereviews.uxlivinglab.online/api/v3/masterlink/?link_id={linkid}"
     payload = {
         "is_opened": True,
     }
     response = requests.put(url, json=payload)
-    # print(response)
-    # print(response.text)
     return response.text
 
-# print(set_finalize("6155348369150513646"))
 
 def get_link_usernames(links):
     public_link_ids = []
 
-    # Loop through each link and extract public_link_id
     for link_info in links:
         link = link_info.get('link', '')
         parsed_url = urlparse(link)
 
-        # Check for public_link_id in fragment
         fragment_params = parse_qs(parsed_url.fragment)
         public_link_id = fragment_params.get('public_link_id', [None])[0]
 

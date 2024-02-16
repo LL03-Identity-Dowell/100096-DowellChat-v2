@@ -1457,45 +1457,6 @@ def public_message_event(sid, message):
         return sio.emit('public_message_response', {'data': error_message, 'status': 'failure'}, room=room_id)
 
 
-# @sio.event
-# def auto_join_room(sid, message):
-#     try:
-#         user_id = message['user_id']
-#         workspace_id = message['workspace_id']
-#         api_key = message['api_key']
-#         product = message['product']
-
-#         db_name = f"{workspace_id}_{product}"
-#         coll_name_category = f"{workspace_id}_category"
-
-#         # Query to get the categories where the user is a member
-#         response_category = data_cube.fetch_data(
-#             api_key=api_key,
-#             db_name=db_name,
-#             coll_name=coll_name_category,
-#             filters={"member_list": {"$in": [user_id]}},
-#             limit=199,
-#             offset=0
-#         )
-
-#         if response_category['success'] and response_category['data']:
-#             for category in response_category['data']:
-#                 # Join the rooms in the category
-#                 for room_id in category.get('rooms', []):
-#                     sio.enter_room(sid, str(room_id))
-
-#             # Add more logic here if needed for handling joined rooms
-#             return sio.emit('auto_join_response', {'data': 'Rooms joined successfully', 'status': 'success',
-#                                                    'operation': 'auto_join_room'}, room=sid)
-#         else:
-#             # No category found for the user
-#             return sio.emit('auto_join_response', {'data': 'No category found for the user', 'status': 'failure',
-#                                                    'operation': 'auto_join_room'}, room=sid)
-
-#     except Exception as e:
-#         error_message = str(e)
-#         return sio.emit('auto_join_response', {'data': error_message, 'status': 'failure',
-#                                                'operation': 'auto_join_room'}, room=sid)
 
 @sio.event
 def auto_join_room(sid, message):
@@ -1510,15 +1471,25 @@ def auto_join_room(sid, message):
         coll_name_category = f"{workspace_id}_category"
         coll_name_public_chat = f"{workspace_id}_public_chat"
 
-        # Query to get all servers where the user is a member
-        response_servers = data_cube.fetch_data(
-            api_key=api_key,
-            db_name=db_name,
-            coll_name=coll_name_server,
-            filters={"member_list": {"$in": [user_id]}},
-            limit=20,
-            offset=0
-        )
+
+        if product == "customer_support":
+            response_servers = data_cube.fetch_data(
+                api_key=api_key,
+                db_name=db_name,
+                coll_name=coll_name_server,
+                filters={},
+                limit=29,
+                offset=0
+            )
+        else:
+            response_servers = data_cube.fetch_data(
+                api_key=api_key,
+                db_name=db_name,
+                coll_name=coll_name_server,
+                filters={"$or": [{"owner": user_id}, {"member_list": {"$in": [user_id]}}]},
+                limit=199,
+                offset=0
+            )
 
         result_data = []  
 
@@ -1531,7 +1502,7 @@ def auto_join_room(sid, message):
                     api_key=api_key,
                     db_name=db_name,
                     coll_name=coll_name_category,
-                    filters={"server_id": str(server_data["server_id"]), "member_list": {"$in": [user_id]}},
+                    filters={"server_id": str(server_data["server_id"])},
                     limit=199,
                     offset=0  
                 )
