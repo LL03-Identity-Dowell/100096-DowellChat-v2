@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 from urllib.parse import urlparse, parse_qs
 import re
-from datetime import datetime
+from datetime import datetime, date
 
 class DBCrudOperation(Enum):
     FETCH = "fetch"
@@ -205,3 +205,31 @@ def get_safe_timestamp():
 # product="customer_support"
 # category_id = "65ba4d6ec5b56cc2cabc9221"
 
+def check_daily_collection(workspace_id, db_name):
+    formatted_date = str(date.today()).replace("-", "_")
+
+    api_key = os.getenv("API_KEY")
+    data_cube = DataCubeConnection()
+
+    db_name = f"{workspace_id}_{db_name}"
+    coll_name = f"{formatted_date}_collection"
+
+    collection_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={}, limit=1, offset=0)
+    
+    if not collection_response['success']:
+        if "Collection" in collection_response['message']:
+            url = "https://datacube.uxlivinglab.online/db_api/add_collection/"
+            data_to_add = {
+                "api_key": api_key,
+                "db_name": db_name,
+                "coll_names": coll_name,
+                "num_collections": 1
+            }
+            response = requests.post(url, json=data_to_add)
+            return True 
+        else:
+            return True   
+    else:
+        return True
+
+# print(check_daily_collection("646ba835ce27ae02d024a902", "customer_support"))
