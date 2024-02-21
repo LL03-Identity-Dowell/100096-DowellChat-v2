@@ -1889,13 +1889,11 @@ def create_topic(sid, message):
         workspace_id = message['workspace_id']
         api_key = message['api_key']
 
-        name = message ['name'].lower().replace(" ", "_")
+        name = message ['name'].upper().replace(" ", "_")
         created_at = message['created_at']
         
         data = {
                 "name": name,
-
-                "workspace_id":workspace_id,
                 "created_at": created_at, 
         }
         
@@ -1931,6 +1929,46 @@ def create_topic(sid, message):
         # Handle other exceptions
         error_message = str(e)
         return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation':'create_topic'}, room=sid)
+
+
+@sio.event
+def get_all_topics(sid, message):
+    try:
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        
+
+        db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+        coll_name = "topics"
+
+        if not check_db(workspace_id, db_name):
+            return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'get_all_topics'}, room=sid)
+
+        if check_collection(workspace_id, "topics", db_name):
+
+            response = data_cube.fetch_data(
+                api_key=api_key,
+                db_name=db_name,
+                coll_name=coll_name,
+                filters={},
+                limit=199,
+                offset=0
+            )
+        
+            if response['success']:
+                if not response['data']:
+                    return sio.emit('setting_response', {'data': 'No Topic found for this Workspace', 'status': 'failure', 'operation': 'get_all_topics'}, room=sid)
+
+                else:
+                    return sio.emit('setting_response', {'data': response['data'], 'status': 'success', 'operation': 'get_all_topics'}, room=sid)
+            else:
+                # Error in fetching data
+                return sio.emit('setting_response', {'data': response['message'], 'status': 'failure', 'operation': 'get_all_topics'}, room=sid)
+
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation': 'get_all_topics'}, room=sid)
 
 
 # @sio.event
