@@ -100,12 +100,16 @@ def create_cs_db_meta(workspace_id):
     else:
         return "DB already exists"
     
-def check_db(workspace_id):
+def check_db(workspace_id, db_name=None):
     api_key = os.getenv("API_KEY")
     data_cube = DataCubeConnection()
 
-    db_name = f"{workspace_id}_customer_support"
-    coll_name = f"{workspace_id}_server"
+    if db_name:
+        db_name=db_name
+        coll_name = f"{workspace_id}_server"
+    else:
+        db_name = f"{workspace_id}_customer_support"
+        coll_name = f"{workspace_id}_server"
     db_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={}, limit=1, offset=0)
     if not db_response['success']:
         if "Database" in db_response['message']:
@@ -115,12 +119,17 @@ def check_db(workspace_id):
             return True
     else:
         return True
-def check_collection(workspace_id, coll):
+def check_collection(workspace_id, coll, db_name=None):
     api_key = os.getenv("API_KEY")
     data_cube = DataCubeConnection()
 
-    db_name = f"{workspace_id}_customer_support"
-    coll_name = f"{workspace_id}_{coll}"
+    if db_name:
+        db_name = db_name
+        coll_name = coll
+    else:
+        db_name = f"{workspace_id}_customer_support"
+        coll_name = f"{workspace_id}_{coll}"
+
     collection_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={}, limit=1, offset=0)
     if not collection_response['success']:
         if "Collection" in collection_response['message']:
@@ -151,7 +160,7 @@ data_cube = DataCubeConnection()
 # print(reponse)
 # print(check_collection("646ba835ce27ae02d024a902", "server"))
 
-# reponse = data_cube.fetch_data(api_key=api_key,db_name="646ba835ce27ae02d024a902_customer_support", coll_name="646ba835ce27ae02d024a902_category", filters={},limit=200, offset=0)
+# reponse = data_cube.fetch_data(api_key=api_key,db_name="646ba835ce27ae02d024a902_CUSTOMER_SUPPORT_DB0", coll_name="topics", filters={"name":"chidiebere"},limit=200, offset=0)
 # print(reponse)
 
 def set_finalize(linkid):
@@ -205,13 +214,16 @@ def get_safe_timestamp():
 # product="customer_support"
 # category_id = "65ba4d6ec5b56cc2cabc9221"
 
-def check_daily_collection(workspace_id, db_name):
+def check_daily_collection(workspace_id, product):
+    """
+    product=db_name
+    """
     formatted_date = str(date.today()).replace("-", "_")
 
     api_key = os.getenv("API_KEY")
     data_cube = DataCubeConnection()
 
-    db_name = f"{workspace_id}_{db_name}"
+    db_name = f"{workspace_id}_{product}"
     coll_name = f"{formatted_date}_collection"
 
     collection_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={}, limit=1, offset=0)

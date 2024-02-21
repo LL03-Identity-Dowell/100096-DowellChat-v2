@@ -1867,3 +1867,108 @@ class PublicNamespace(socketio.Namespace):
         sio.emit('callEnded')
 
 sio.register_namespace(PublicNamespace('/public'))
+
+
+
+""" 
+=============================================================================================
+
+                CUSTOMER SUPPORT VERSION 2 STARTS HERE
+
+===============================================================================================
+"""
+ 
+##TODO - Create DB 0 
+##TODO - Create an event for adding topics and also for retrieving topics
+##TODO - Create another event for other settings in the DB 0
+##NOTE: While creating a topic: check if the DB for that topic exists
+
+@sio.event
+def create_topic(sid, message):
+    try:
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+
+        name = message ['name'].lower().replace(" ", "_")
+        created_at = message['created_at']
+        
+        data = {
+                "name": name,
+
+                "workspace_id":workspace_id,
+                "created_at": created_at, 
+        }
+        
+        db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+        coll_name = "topics"
+        topic_db = f"{workspace_id}_{name}"
+
+        
+
+        #Check if the DB0 Exists
+        if not check_db(workspace_id, db_name):
+            return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)
+
+        #Check if the DB for the topic exists
+        if not check_db(workspace_id, topic_db):
+            return sio.emit('setting_response', {'data':f"DB {workspace_id}_{name.upper()} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)    
+
+        
+        if check_collection(workspace_id, "topics", db_name):
+            
+            check_topic = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"name":name},limit=200, offset=0)
+            if check_topic['success']:
+                if check_topic['data']:
+                    return sio.emit('setting_response', {'data':f"Topic {name} already exists", 'status': 'failure', 'operation':'create_topic'}, room=sid)
+
+            response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
+
+            if response['success'] == True:
+                return sio.emit('setting_response', {'data':response['data'], 'status': 'success', 'operation':'create_topic'}, room=sid)
+            else:
+                return sio.emit('setting_response', {'data':response['message'], 'status': 'failure', 'operation':'create_topic'}, room=sid)
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation':'create_topic'}, room=sid)
+
+
+# @sio.event
+# def create_meta_settings(sid, message):
+#     try:
+#         workspace_id = message['workspace_id']
+#         api_key = message['api_key']
+#         product = message['product']
+
+#         topics = message ['topics']
+#         waiting_time = message['waiting_time']
+#         operation_time = message['operation_time']
+#         line_manager = message['line_manager']
+#         created_at = message['created_at']
+        
+#         data = {
+#                 "topics": topics,
+#                 "waiting_time": waiting_time,
+#                 "operation_time": operation_time,
+#                 "line_manager": line_manager,
+#                 "workspace_id":workspace_id,
+#                 "created_at": created_at, 
+#         }
+        
+#         db_name = f"{workspace_id}_{product}"
+#         coll_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+
+#         if not check_db(workspace_id):
+#             return sio.emit('setting_response', {'data':"No DB found for the Workspace", 'status': 'failure', 'operation':'create_meta_settings'}, room=sid)
+#         if check_collection(workspace_id, "server"):
+#             response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
+
+#             if response['success'] == True:
+#                 return sio.emit('setting_response', {'data':response['data'], 'status': 'success', 'operation':'create_meta_settings'}, room=sid)
+#             else:
+#                 return sio.emit('setting_response', {'data':response['message'], 'status': 'failure', 'operation':'create_meta_settings'}, room=sid)
+#     except Exception as e:
+#         # Handle other exceptions
+#         error_message = str(e)
+#         return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation':'create_meta_settings'}, room=sid)
+
