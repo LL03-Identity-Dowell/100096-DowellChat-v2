@@ -1883,6 +1883,7 @@ sio.register_namespace(PublicNamespace('/public'))
 ##TODO - Create another event for other settings in the DB 0
 ##NOTE: While creating a topic: check if the DB for that topic exists
 
+"""TOPIC RELATED EVENTS"""
 @sio.event
 def create_topic(sid, message):
     try:
@@ -1970,6 +1971,98 @@ def get_all_topics(sid, message):
         error_message = str(e)
         return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation': 'get_all_topics'}, room=sid)
 
+
+""" LINE MANAGER RELATED EVENTS"""
+@sio.event
+def create_line_manager(sid, message):
+    try:
+        user_id = message['user_id']
+        positions_in_a_line = message['positions_in_a_line']
+        average_serving_time = message['average_serving_time']
+        ticket_count = message['ticket_count']
+        created_at = message['created_at']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+
+        
+        
+        data = {
+                "user_id": user_id,
+                "positions_in_a_line":positions_in_a_line,
+                "average_serving_time":average_serving_time,
+                "ticket_count": ticket_count,
+                "is_active": True,
+                "created_at": created_at, 
+        }
+        
+        db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+        coll_name = "line_manager"
+
+        
+
+        #Check if the DB0 Exists
+        if not check_db(workspace_id, db_name):
+            return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
+
+       
+        
+        if check_collection(workspace_id, "line_manager", db_name):
+            
+            check_user = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"user_id":user_id},limit=200, offset=0)
+            if check_user['success']:
+                if check_user['data']:
+                    return sio.emit('setting_response', {'data':f"User {user_id} already exists", 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
+
+            response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
+
+            if response['success'] == True:
+                return sio.emit('setting_response', {'data':response['data'], 'status': 'success', 'operation':'create_line_manager'}, room=sid)
+            else:
+                return sio.emit('setting_response', {'data':response['message'], 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
+
+
+@sio.event
+def get_all_line_managers(sid, message):
+    try:
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        
+
+        db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+        coll_name = "line_manager"
+
+        if not check_db(workspace_id, db_name):
+            return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'get_all_line_managers'}, room=sid)
+
+        if check_collection(workspace_id, "line_manager", db_name):
+
+            response = data_cube.fetch_data(
+                api_key=api_key,
+                db_name=db_name,
+                coll_name=coll_name,
+                filters={},
+                limit=199,
+                offset=0
+            )
+        
+            if response['success']:
+                if not response['data']:
+                    return sio.emit('setting_response', {'data': 'No Line Manager found for this Workspace', 'status': 'failure', 'operation': 'get_all_line_managers'}, room=sid)
+
+                else:
+                    return sio.emit('setting_response', {'data': response['data'], 'status': 'success', 'operation': 'get_all_line_managers'}, room=sid)
+            else:
+                # Error in fetching data
+                return sio.emit('setting_response', {'data': response['message'], 'status': 'failure', 'operation': 'get_all_line_managers'}, room=sid)
+
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation': 'get_all_line_managers'}, room=sid)
 
 # @sio.event
 # def create_meta_settings(sid, message):
