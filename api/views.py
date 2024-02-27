@@ -2135,9 +2135,46 @@ def ticket_message_event(sid, message):
 
         }
 
-        sio.emit('ticket_message_response', {'data':data, 'status': 'success', 'operation':'send_message'}, room=sid)
+        sio.enter_room(sid, ticket_id)
+        sio.emit('ticket_message_response', {'data':data, 'status': 'success', 'operation':'send_message'}, room=ticket_id)
         producerTicketChat.publish(data)
 
     except Exception as e:
         error_message = str(e)
         return sio.emit('ticket_message_response', {'data': error_message, 'status': 'failure'}, room=sid)
+
+@sio.event
+def get_ticket_messages(sid, message):
+    try:
+        ticket = message['ticket_id']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product.lower()}"
+        coll_name = "2024_02_26_collection"
+        response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"document_type":"ticket", "_id":ticket}, limit=1, offset=0)
+
+        if response['success']:
+            if response['data']:
+                return sio.emit('ticket_message_response', {'data': 'No Ticket found ', 'status': 'failure', 'operation':'get_ticket_messages'}, room=sid)
+            else:
+                sio.enter_room(sid, ticket)
+                msg_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"document_type":"chat", "ticket_id":ticket}, limit=50, offset=0)
+                if msg_response['data']:
+                    sio.emit('ticket_message_response', {'data': msg_response['data'], 'status': 'success', 'operation': 'get_ticket_messages'}, room=sid)
+                    
+                    #Mark the messages as read
+                    update_data = {
+                        'is_read': True, 
+                    }
+                    mark_read = data_cube.update_data(api_key=my_api_key, db_name=db_name, coll_name=coll_name, query={"document_type":"ticket", "ticket_id":ticket}, update_data=update_data)
+                    
+                else:
+                    sio.emit('ticket_message_response', {'data': [], 'status': 'success', 'operation': 'get_ticket_messages'}, room=sid)    
+                return
+
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('ticket_message_response', {'data': error_message, 'status': 'failure', 'operation':'get_ticket_messages'}, room=sid)
