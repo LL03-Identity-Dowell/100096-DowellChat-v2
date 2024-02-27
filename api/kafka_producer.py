@@ -1,0 +1,16 @@
+import json
+from confluent_kafka import Producer
+import socket
+topic='ticket_chat_topic_test'
+
+class ProducerTicketChat:
+    def __init__(self) -> None:        
+        conf = {'bootstrap.servers': "localhost:9092",'client.id': socket.gethostname()}
+        self.producer = Producer(conf)
+
+    # This method will be called inside view for sending Kafka message
+    def publish(self, body):
+        print('Sending to Kafka: ')
+        self.producer.produce(topic, key="key.chat.created", value=json.dumps(body))
+        # # Flush and close the producer
+        self.producer.flush()

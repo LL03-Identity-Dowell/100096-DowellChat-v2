@@ -14,3 +14,6 @@ gevent==21.8.0  # Required for the gevent integration with uWSGI
 gevent-websocket
 python-dotenv
 requests
+
+confluent-kafka
+pika

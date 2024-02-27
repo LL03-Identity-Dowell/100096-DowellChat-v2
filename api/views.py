@@ -23,6 +23,8 @@ import socketio
 import base64
 from django.conf import settings
 
+from .kafka_producer import ProducerTicketChat
+
 
 
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
@@ -2103,3 +2105,39 @@ def get_all_line_managers(sid, message):
 #         error_message = str(e)
 #         return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation':'create_meta_settings'}, room=sid)
 
+""" TICKET CHAT STARTS HERE"""
+@sio.event
+def ticket_message_event(sid, message):
+    producerTicketChat = ProducerTicketChat()
+    try:
+
+        ticket_id = message['ticket_id']
+        message_data = message['message_data']
+        user_id = message['user_id']
+        reply_to = message['reply_to']
+        created_at = message['created_at']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        data = {
+                    "document_type": "chat",
+                    "ticket_id": ticket_id,
+                    "message_data": message_data,
+                    "author": user_id,
+                    "reply_to": reply_to, 
+                    "is_read": False,     
+                    "created_at": created_at, 
+                    "product": product.lower(),
+                    "workspace_id":workspace_id,
+                    "api_key": api_key,
+                    "sid":sid
+
+        }
+
+        sio.emit('ticket_message_response', {'data':data, 'status': 'success', 'operation':'send_message'}, room=sid)
+        producerTicketChat.publish(data)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('ticket_message_response', {'data': error_message, 'status': 'failure'}, room=sid)

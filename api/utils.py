@@ -160,7 +160,7 @@ data_cube = DataCubeConnection()
 # print(reponse)
 # print(check_collection("646ba835ce27ae02d024a902", "server"))
 
-# reponse = data_cube.fetch_data(api_key=api_key,db_name="646ba835ce27ae02d024a902_CUSTOMER_SUPPORT_DB0", coll_name="topics", filters={"name":"chidiebere"},limit=200, offset=0)
+# reponse = data_cube.fetch_data(api_key=api_key,db_name="646ba835ce27ae02d024a902_livinglab_chat", coll_name="2024_02_26_collection", filters={},limit=200, offset=0)
 # print(reponse)
 
 def set_finalize(linkid):
