@@ -14,6 +14,8 @@ class DBCrudOperation(Enum):
     UPDATE = "update"
     DELETE = "delete"
 
+# The `DataCubeConnection` class provides methods for fetching, inserting, updating, and deleting data
+# from a data cube using CRUD operations.
 class DataCubeConnection:
     BASE_URL = "https://datacube.uxlivinglab.online/db_api/"
     CRUD_URL = BASE_URL + "crud/"
@@ -188,6 +190,26 @@ def get_link_usernames(links):
 
 
 def get_room_details(workspace_id, api_key, product, category_id):
+    """
+    The function `get_room_details` retrieves room details based on workspace ID, API key, product, and
+    category ID.
+    
+    :param workspace_id: Workspace ID is a unique identifier for a specific workspace or environment
+    where the data is stored or accessed. It helps in distinguishing different workspaces within a
+    system
+    :param api_key: An API key is a unique identifier used to authenticate a user, developer, or calling
+    program to an API (Application Programming Interface). It is typically a long string of alphanumeric
+    characters that grants access to specific resources or services
+    :param product: Product is a variable that represents the type of product or service related to the
+    room details being fetched
+    :param category_id: Category ID is the identifier for a specific category within the workspace. It
+    is used to filter and retrieve room details for that particular category
+    :return: The function `get_room_details` returns the data fetched from the database based on the
+    provided workspace_id, api_key, product, and category_id. If the collection "category" exists in the
+    workspace, it fetches data using the `data_cube.fetch_data` function with specified filters and
+    returns the data if the operation is successful. If the collection "category" does not exist, an
+    empty list
+    """
     db_name = f"{workspace_id}_{product}"
     coll_name = f"{workspace_id}_public_room"
 
@@ -245,3 +267,54 @@ def check_daily_collection(workspace_id, product):
         return True
 
 # print(check_daily_collection("646ba835ce27ae02d024a902", "customer_support"))
+
+def get_database_collections(api_key, db_name):
+    """
+    Retrieve a list of collections in the DataCube database.
+
+    :param api_key: The API key for authentication.
+    :param db_name: The name of the database.
+    :return: A list containing only the collections with "_collection" in their names.
+    """
+    url = "https://datacube.uxlivinglab.online/db_api/collections/"
+    payload = {
+        "api_key": api_key,
+        "db_name": db_name,
+        "payment": False
+    }
+    response = requests.get(url, json=payload)
+    if response.json()['data']:
+        data = response.json()['data'][0]  
+        filtered_collections = [collection for collection in data if '_collection' in collection]
+        return filtered_collections
+    else:
+        return []
+
+
+
+def fetch_data_from_collections(api_key, db_name, collections, filters, limit=50, offset=0):
+    """
+    This Python function fetches data from multiple collections using specified filters, limit, and
+    offset parameters.
+    
+    :param api_key: The `api_key` parameter is typically a unique identifier or authentication token
+    that grants access to the API services. 
+    :param db_name: The `db_name` parameter in the `fetch_data_from_collections` function refers to the
+    name of the database from which you want to fetch data.
+    :param collections: Collections is a list of collection names from which data needs to be fetched
+    :param filters: Filters are conditions or criteria used to retrieve specific data from a database or
+    collection. 
+    :param limit: The `limit` parameter in the `fetch_data_from_collections` function specifies the
+    maximum number of records to retrieve from each collection.
+    :param offset: The `offset` parameter in the `fetch_data_from_collections` function is used to
+    specify the starting point from which data should be fetched. 
+    :return: The function `fetch_data_from_collections` returns a list of data fetched from the
+    specified collections based on the provided API key, database name, filters, limit, and offset
+    parameters.
+    """
+    data = []
+    for coll_name in collections:
+        data_response = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=coll_name, filters=filters, limit=limit, offset=offset)
+        if data_response['data']:
+            data.extend(data_response['data'])
+    return data

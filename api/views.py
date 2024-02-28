@@ -1,5 +1,5 @@
-async_mode = 'gevent'
-# async_mode = "threading"
+# async_mode = 'gevent'
+async_mode = "threading"
 import requests
 from .models import Message
 from rest_framework.decorators import api_view
@@ -14,7 +14,9 @@ from .utils import (
     get_link_usernames,
     get_room_details, 
     get_safe_timestamp,
-    sanitize_filename
+    sanitize_filename,
+    get_database_collections,
+    fetch_data_from_collections
     )
 import os
 import json
@@ -2160,15 +2162,22 @@ def get_ticket_messages(sid, message):
                 return sio.emit('ticket_message_response', {'data': 'No Ticket found ', 'status': 'failure', 'operation':'get_ticket_messages'}, room=sid)
             else:
                 sio.enter_room(sid, ticket)
-                msg_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"document_type":"chat", "ticket_id":ticket}, limit=50, offset=0)
-                if msg_response['data']:
-                    sio.emit('ticket_message_response', {'data': msg_response['data'], 'status': 'success', 'operation': 'get_ticket_messages'}, room=sid)
+                collections = get_database_collections(api_key, db_name)
+                print(collections)
+                message_filters = {"document_type": "chat", "ticket_id": ticket}
+                messages = fetch_data_from_collections(api_key, db_name, collections, message_filters)
+
+                print(f"Messages{messages}")
+                # msg_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"document_type":"chat", "ticket_id":ticket}, limit=50, offset=0)
+                if messages:
+                    sio.emit('ticket_message_response', {'data': messages, 'status': 'success', 'operation': 'get_ticket_messages'}, room=sid)
                     
                     #Mark the messages as read
                     update_data = {
                         'is_read': True, 
                     }
-                    mark_read = data_cube.update_data(api_key=my_api_key, db_name=db_name, coll_name=coll_name, query={"document_type":"ticket", "ticket_id":ticket}, update_data=update_data)
+                    for coll_name in collections:
+                        mark_read = data_cube.update_data(api_key=my_api_key, db_name=db_name, coll_name=coll_name, query={"document_type":"ticket", "ticket_id":ticket}, update_data=update_data)
                     
                 else:
                     sio.emit('ticket_message_response', {'data': [], 'status': 'success', 'operation': 'get_ticket_messages'}, room=sid)    
