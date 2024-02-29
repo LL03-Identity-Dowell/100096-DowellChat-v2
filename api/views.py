@@ -1,5 +1,5 @@
-# async_mode = 'gevent'
-async_mode = "threading"
+async_mode = 'gevent'
+# async_mode = "threading"
 import requests
 from .models import Message
 from rest_framework.decorators import api_view
@@ -16,13 +16,16 @@ from .utils import (
     get_safe_timestamp,
     sanitize_filename,
     get_database_collections,
-    fetch_data_from_collections
+    fetch_data_from_collections,
+    assign_ticket_to_line_manager,
+    check_daily_collection
     )
 import os
 import json
 from django.http import HttpResponse
 import socketio
 import base64
+from datetime import date
 from django.conf import settings
 
 from .kafka_producer import ProducerTicketChat
@@ -304,7 +307,7 @@ def add_server_member(sid, message):
 
             for channel in channels:
                 # Check if the channel is private
-                private_value = channel.get('private', '').lower().strip()
+                private_value = channel.get('private', '').upper().strip()
                 print(f"Private value: '{private_value}', Length: {len(private_value)}")
 
                 # If the channel is not private, add the member to the channel
@@ -1961,6 +1964,7 @@ def get_all_topics(sid, message):
             )
         
             if response['success']:
+                sio.enter_room(sid, workspace_id)
                 if not response['data']:
                     return sio.emit('setting_response', {'data': 'No Topic found for this Workspace', 'status': 'failure', 'operation': 'get_all_topics'}, room=sid)
 
@@ -2130,7 +2134,7 @@ def ticket_message_event(sid, message):
                     "reply_to": reply_to, 
                     "is_read": False,     
                     "created_at": created_at, 
-                    "product": product.lower(),
+                    "product": product.upper(),
                     "workspace_id":workspace_id,
                     "api_key": api_key,
                     "sid":sid
@@ -2153,7 +2157,7 @@ def get_ticket_messages(sid, message):
         api_key = message['api_key']
         product = message['product']
 
-        db_name = f"{workspace_id}_{product.lower()}"
+        db_name = f"{workspace_id}_{product.upper()}"
         coll_name = "2024_02_26_collection"
         response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"document_type":"ticket", "_id":ticket}, limit=1, offset=0)
 
@@ -2163,11 +2167,11 @@ def get_ticket_messages(sid, message):
             else:
                 sio.enter_room(sid, ticket)
                 collections = get_database_collections(api_key, db_name)
-                print(collections)
+               
                 message_filters = {"document_type": "chat", "ticket_id": ticket}
                 messages = fetch_data_from_collections(api_key, db_name, collections, message_filters)
 
-                print(f"Messages{messages}")
+                
                 # msg_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"document_type":"chat", "ticket_id":ticket}, limit=50, offset=0)
                 if messages:
                     sio.emit('ticket_message_response', {'data': messages, 'status': 'success', 'operation': 'get_ticket_messages'}, room=sid)
@@ -2187,3 +2191,92 @@ def get_ticket_messages(sid, message):
         # Handle other exceptions
         error_message = str(e)
         return sio.emit('ticket_message_response', {'data': error_message, 'status': 'failure', 'operation':'get_ticket_messages'}, room=sid)
+
+
+@sio.event
+def create_ticket(sid, message):
+    try:
+
+        user_id = message['user_id']
+
+        created_at = message['created_at']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+        
+        line_manager = assign_ticket_to_line_manager(api_key, f"{workspace_id}_CUSTOMER_SUPPORT_DB0", "line_manager", {})
+        
+        data = {
+                    "document_type": "ticket",
+                    "user_id": user_id,
+                    "display_name": None,
+                    "line_manager": line_manager, 
+                    "is_closed": False,     
+                    "created_at": created_at, 
+                    "updated_at": created_at,
+                    "product": product.lower(),
+
+        }
+
+        formatted_date = str(date.today()).replace("-", "_")
+        db_name = f"{workspace_id}_{product}"
+        coll_name = f"{formatted_date}_collection"
+
+        if check_daily_collection(workspace_id, product):
+                            
+            response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
+            
+            if response['success'] == True:
+                sio.enter_room(sid, response['data']['inserted_id'])
+        
+                new_ticket_data ={
+                    '_id': response['data']['inserted_id'], 
+                    "user_id": user_id,
+                    "display_name": None,
+                    "line_manage": line_manager, 
+                    "is_closed": False,     
+                    "created_at": created_at, 
+                    "updated_at": created_at,
+                    "product": product.upper(),
+                    }
+
+                sio.emit('new_ticket', {'data': new_ticket_data, 'status': 'success', }, room=workspace_id)
+                
+              
+                return sio.emit('ticket_response', {'data': new_ticket_data, 'status': 'success', 'operation': 'create_ticket'}, room=sid)
+                
+            else:
+                return sio.emit('ticket_response', {'data':"Error Creating Room", 'status': 'failure', 'operation':'create_ticket'}, room=sid)
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('ticket_response', {'data': error_message, 'status': 'failure', 'operation':'create_ticket'}, room=sid)
+
+
+@sio.event
+def get_tickets(sid, message):
+    try:
+        # user_id = message['user_id']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product.upper()}"
+        
+        collections = get_database_collections(api_key, db_name)
+        
+        ticket_filters = {"document_type": "ticket"}
+        tickets = fetch_data_from_collections(api_key, db_name, collections, ticket_filters)
+
+       
+        if tickets:
+            sio.emit('ticket_response', {'data': tickets, 'status': 'success', 'operation': 'get_ticket'}, room=sid)
+             
+        else:
+            sio.emit('ticket_response', {'data': [], 'status': 'success', 'operation': 'get_ticket'}, room=sid)    
+        return
+
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('ticket_response', {'data': error_message, 'status': 'failure', 'operation':'get_ticket'}, room=sid)

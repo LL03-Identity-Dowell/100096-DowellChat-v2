@@ -318,3 +318,72 @@ def fetch_data_from_collections(api_key, db_name, collections, filters, limit=50
         if data_response['data']:
             data.extend(data_response['data'])
     return data
+
+
+def assign_ticket_to_line_manager(api_key, db_name, coll_name, filters, limit=199, offset=0):
+    """
+    Assign a ticket to a line manager based on round-robin algorithm and specific conditions.
+
+    :param api_key: The API key for authentication.
+    :param db_name: The name of the database.
+    :param coll_name: The name of the collection containing line manager data.
+    :param filters: Filters to apply while retrieving line manager data.
+    :param limit: Maximum number of line managers to retrieve (default is 199).
+    :param offset: Offset for pagination (default is 0).
+    :return: The user_id of the assigned line manager or None if no line manager available.
+    """
+    response = data_cube.fetch_data(
+        api_key=api_key,
+        db_name=db_name,
+        coll_name=coll_name,
+        filters=filters,
+        limit=limit,
+        offset=offset
+    )
+
+    line_managers = response['data']
+    line_managers.sort(key=lambda x: (x['ticket_count'], x['positions_in_a_line']))  
+    print(line_managers)
+
+    for line_manager in line_managers:
+        if line_manager['ticket_count'] == 0:
+            line_manager['ticket_count'] += 1  
+            data_cube.update_data(
+                api_key=api_key,
+                db_name=db_name,
+                coll_name=coll_name,
+                query={'_id': line_manager['_id']},
+                update_data={'ticket_count': line_manager['ticket_count']}
+            )
+            return line_manager['user_id']  
+
+    # If all line managers have ongoing tickets, assign to the one with the lowest ticket_count and positions_in_a_line
+    if line_managers:
+        line_manager = line_managers[0]
+        line_manager['ticket_count'] += 1  
+        data_cube.update_data(
+            api_key=api_key,
+            db_name=db_name,
+            coll_name=coll_name,
+            query={'_id': line_manager['_id']},
+            update_data={'ticket_count': line_manager['ticket_count']}
+        )
+        return line_manager['user_id']
+    else:
+        return None
+
+# Example usage:
+
+# db_name = "646ba835ce27ae02d024a902_CUSTOMER_SUPPORT_DB0"
+# coll_name = "line_manager"
+# filters = {}
+
+# line_manager_id = assign_ticket_to_line_manager(api_key, db_name, coll_name, filters)
+# if line_manager_id:
+#     print("Ticket assigned to line manager:", line_manager_id)
+# else:
+#     print("No line manager available.")
+
+
+# reponse = data_cube.update_data(api_key=api_key,db_name="646ba835ce27ae02d024a902_CUSTOMER_SUPPORT_DB0", coll_name="line_manager", query={"user_id":"646ba835ce27ae02d024a902"},update_data={"ticket_count":0})
+# print(reponse)
