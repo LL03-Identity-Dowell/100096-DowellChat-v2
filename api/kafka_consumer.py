@@ -21,7 +21,7 @@ from .views import sio
 
 #We want to run thread in an infinite loop
 running=True
-conf = {'bootstrap.servers': "localhost:9092",
+conf = {'bootstrap.servers': "kafka:9092",
         'auto.offset.reset': 'smallest',
         'group.id': "user_group"}
 #Topic
