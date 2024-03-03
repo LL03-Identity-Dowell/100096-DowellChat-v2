@@ -385,5 +385,5 @@ def assign_ticket_to_line_manager(api_key, db_name, coll_name, filters, limit=19
 #     print("No line manager available.")
 
 
-# reponse = data_cube.update_data(api_key=api_key,db_name="646ba835ce27ae02d024a902_CUSTOMER_SUPPORT_DB0", coll_name="line_manager", query={"user_id":"646ba835ce27ae02d024a902"},update_data={"ticket_count":0})
+# reponse = data_cube.update_data(api_key=api_key,db_name="646ba835ce27ae02d024a902_CUSTOMER_SUPPORT_DB0", coll_name="line_manager", query={"user_id":"646ba835ce27ae02d024a902"},update_data={"ticket_count":6})
 # print(reponse)
