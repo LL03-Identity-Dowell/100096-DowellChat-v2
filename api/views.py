@@ -29,7 +29,7 @@ from datetime import date
 from django.conf import settings
 
 from .kafka_producer import ProducerTicketChat
-
+import random
 
 
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
@@ -2350,3 +2350,53 @@ def close_ticket(sid, message):
         # Handle other exceptions
         error_message = str(e)
         return sio.emit('ticket_response', {'data': error_message, 'status': 'failure', 'operation':'close_ticket'}, room=sid)
+
+@sio.event
+def generate_share_link(sid, message):
+    try:
+        number_of_links = message['number_of_links']
+        product_distribution = message['product_distribution']
+        usernames = message['usernames']
+        url = message['url']
+        created_at = message['created_at']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+
+        link_id = ''.join([str(random.randint(0, 9)) for _ in range(20)])
+        link = f"{url}?workspace_id={workspace_id}&link_id={link_id}"
+        master_link = f"http://127.0.0.1:8000/share/{link_id}"
+
+        data = {
+            "link_id":link_id,
+            "number_of_links": number_of_links,
+            "available_links": number_of_links,
+            "product_distribution": product_distribution,
+            "link": link,
+            "usernames": usernames,
+            "is_active": True,
+            "master_link": master_link,
+            "created_at": created_at
+        }
+
+        print(data)
+
+        db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+        coll_name = "master_link"
+  
+        #Check if the DB0 Exists
+        if not check_db(workspace_id, db_name):
+            return sio.emit('share_link_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'generate_share_link'}, room=sid)
+
+        if check_collection(workspace_id, "master_link", db_name):            
+            response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
+
+            if response['success'] == True:
+                return sio.emit('share_link_response', {'data':master_link, 'status': 'success', 'operation':'generate_share_link'}, room=sid)
+            else:
+                return sio.emit('share_link_response', {'data':response['message'], 'status': 'failure', 'operation':'generate_share_link'}, room=sid)
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('share_link_response', {'data': error_message, 'status': 'failure', 'operation':'generate_share_link'}, room=sid)
+
+
