@@ -29,7 +29,7 @@ from datetime import date
 from django.conf import settings
 
 from .kafka_producer import ProducerTicketChat
-
+import random
 
 
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
@@ -2280,3 +2280,123 @@ def get_tickets(sid, message):
         # Handle other exceptions
         error_message = str(e)
         return sio.emit('ticket_response', {'data': error_message, 'status': 'failure', 'operation':'get_ticket'}, room=sid)
+
+@sio.event
+def close_ticket(sid, message):
+    try:
+        ticket_id = message['ticket_id']
+        line_manager = message['line_manager']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product.lower()}"
+        
+        collections = get_database_collections(api_key, db_name)
+
+        ticket_closed = False
+        for coll_name in collections:
+            response = data_cube.update_data(
+                api_key=api_key,
+                db_name=db_name,
+                coll_name=coll_name,
+                query={'_id': ticket_id},
+                update_data={'is_closed': True}
+            )
+            if response['success'] and response['message'] != '0 documents updated successfully!':
+                ticket_closed = True
+                sio.emit('ticket_response', {'data': "Ticket Closed", 'status': 'success', 'operation': 'close_ticket'}, room=sid)
+                
+                # Update line manager's ticket count
+                line_manager_db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+                line_manager_coll_name = "line_manager"
+                line_manager_data = data_cube.fetch_data(
+                    api_key=api_key,
+                    db_name=line_manager_db_name,
+                    coll_name=line_manager_coll_name,
+                    filters={'user_id': line_manager},
+                    limit=1,
+                    offset=0
+                )
+
+                if line_manager_data:
+                    new_ticket_count = line_manager_data['data'][0]['ticket_count'] 
+                    new_ticket_count -=1
+                    line_manager_response = data_cube.update_data(
+                        api_key=api_key,
+                        db_name=line_manager_db_name,
+                        coll_name=line_manager_coll_name,
+                        query={'user_id': line_manager},
+                        update_data={"ticket_count":new_ticket_count}
+                    )
+
+
+                    if line_manager_response['success']:
+                        print(f"Ticket count updated for line manager: {line_manager}")
+                    else:
+                        print("Failed to update ticket count for line manager:", line_manager_response['message'])
+                else:
+                    print("Line manager not found:", line_manager)
+
+
+                break
+
+        if not ticket_closed:
+            sio.emit('ticket_response', {'data': "Ticket Already Closed", 'status': 'success', 'operation': 'close_ticket'}, room=sid)    
+
+        return
+
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('ticket_response', {'data': error_message, 'status': 'failure', 'operation':'close_ticket'}, room=sid)
+
+@sio.event
+def generate_share_link(sid, message):
+    try:
+        number_of_links = message['number_of_links']
+        product_distribution = message['product_distribution']
+        usernames = message['usernames']
+        url = message['url']
+        created_at = message['created_at']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+
+        link_id = ''.join([str(random.randint(0, 9)) for _ in range(20)])
+        link = f"{url}?workspace_id={workspace_id}&link_id={link_id}"
+        master_link = f"http://127.0.0.1:8000/share/{link_id}"
+
+        data = {
+            "link_id":link_id,
+            "number_of_links": number_of_links,
+            "available_links": number_of_links,
+            "product_distribution": product_distribution,
+            "link": link,
+            "usernames": usernames,
+            "is_active": True,
+            "master_link": master_link,
+            "created_at": created_at
+        }
+
+        print(data)
+
+        db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+        coll_name = "master_link"
+  
+        #Check if the DB0 Exists
+        if not check_db(workspace_id, db_name):
+            return sio.emit('share_link_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'generate_share_link'}, room=sid)
+
+        if check_collection(workspace_id, "master_link", db_name):            
+            response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
+
+            if response['success'] == True:
+                return sio.emit('share_link_response', {'data':master_link, 'status': 'success', 'operation':'generate_share_link'}, room=sid)
+            else:
+                return sio.emit('share_link_response', {'data':response['message'], 'status': 'failure', 'operation':'generate_share_link'}, room=sid)
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('share_link_response', {'data': error_message, 'status': 'failure', 'operation':'generate_share_link'}, room=sid)
+
+

@@ -126,4 +126,191 @@ Event triggered when a client disconnects from the WebSocket. It emits a 'callEn
 ```javascript
 socket.on('disconnect', () => {
     // Handle disconnection
-});```
+});
+```
+
+
+## Customer Support Ticket System Section
+
+### ```Create Topic```
+This event is used to create a new topic 
+
+```javascript
+socket.emit('create_topic', {
+    name: "Name of Topic",
+    workspace_id: "Your workspace ID",
+    api_key: "Your ApI Key",
+    created_at: "Date of Creation"
+});
+```
+
+#### Client Listening:
+```javascript
+socket.on('setting_response', (data) => {
+    // Handle response for the event
+    console.log(data);
+});
+```
+
+### ```Get  All Topics```
+This event returns all the topics in a particular workspace
+
+```javascript
+socket.emit('get_all_topics', {
+    workspace_id: "Your workspace ID",
+    api_key: "Your ApI Key",
+});
+```
+
+#### Client Listening:
+```javascript
+socket.on('setting_response', (data) => {
+    // Handle response for the event
+    console.log(data);
+});
+```
+
+### ```Create Line Manager```
+This event creates a new line manager
+
+```javascript
+socket.emit('create_line_manager', {
+    user_id: "UserID of the line manager",
+    positions_in_a_line: "Position in line",
+    average_serving_time: "Average Servering time",
+    ticket_count: 0,
+    workspace_id: "Your workspace ID",
+    api_key: "Your ApI Key",
+    created_at: "Date of creation"
+});
+```
+
+#### Client Listening:
+```javascript
+socket.on('setting_response', (data) => {
+    // Handle response for the event
+    console.log(data);
+});
+```
+
+### ```Get  All Line Managers```
+This event returns all the line managers in a particular workspace
+
+```javascript
+socket.emit('get_all_line_managers', {
+    workspace_id: "Your workspace ID",
+    api_key: "Your ApI Key",
+});
+```
+
+#### Client Listening:
+```javascript
+socket.on('setting_response', (data) => {
+    // Handle response for the event
+    console.log(data);
+});
+```
+
+### ```Ticket message event```
+Send a message to a chat room. This event is used to send messages to a chat room. 
+
+```javascript
+socket.emit('ticket_message_event', {
+    ticket_id: "ID of the ticket the message is coming from",
+    product: "The Product name",
+    message_data: "Content of the message",
+    user_id: "UserID of the sender",
+    reply_to: "None",
+    workspace_id: "Your workspace ID",
+    api_key: "Your ApI Key",
+    created_at: "Date of Creation"
+});
+```
+
+#### Client Listening:
+```javascript
+socket.on('ticket_message_response', (data) => {
+    // Handle response for the event
+    console.log(data);
+});
+```
+### ```Get  Ticket Messages```
+This event returns all the messages in a particular ticket
+
+```javascript
+socket.emit('get_ticket_messages', {
+    ticket_id: "ID of the ticket the message is coming from",
+    product: "The Product name",
+    workspace_id: "Your workspace ID",
+    api_key: "Your ApI Key",
+});
+```
+
+#### Client Listening:
+```javascript
+socket.on('ticket_message_response', (data) => {
+    // Handle response for the event
+    console.log(data);
+});
+```
+
+### ```Create Ticket```
+This event is used to create a new ticket 
+
+```javascript
+socket.emit('create_ticket', {
+    user_id: "Public user id of the creator",
+    product: "The Product name",
+    workspace_id: "Your workspace ID",
+    api_key: "Your ApI Key",
+    created_at: "Date of Creation"
+});
+```
+
+#### Client Listening:
+```javascript
+socket.on('ticket_response', (data) => {
+    // Handle response for the event
+    console.log(data);
+});
+```
+
+### ```Get  Tickets ```
+This event returns all the tickets in a particular product
+
+```javascript
+socket.emit('get_tickets', {
+    product: "The Product name",
+    workspace_id: "Your workspace ID",
+    api_key: "Your ApI Key",
+});
+```
+
+#### Client Listening:
+```javascript
+socket.on('ticket_response', (data) => {
+    // Handle response for the event
+    console.log(data);
+});
+```
+
+### ```Close  Ticket ```
+This event closes a tickets in a particular product
+
+```javascript
+socket.emit('close_ticket', {
+    ticket_id: "ID of the ticket to be closed",
+    line_manager: "ID of the line manager that is assigned to the ticket",
+    product: "The Product name",
+    workspace_id: "Your workspace ID",
+    api_key: "Your ApI Key",
+});
+```
+
+#### Client Listening:
+```javascript
+socket.on('ticket_response', (data) => {
+    // Handle response for the event
+    console.log(data);
+});
+```
