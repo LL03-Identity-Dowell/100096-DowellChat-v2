@@ -1,40 +1,89 @@
 version: "3.8"
 
 services:
-  django:
-    image: django
-    container_name: django
-    build: .
+  chat-backend:
+    build:
+      context: .
+    container_name: dowellchat-backend
+    restart: always
+    command: gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 Chat.wsgi:application --timeout 1060
     ports:
-      - 8001:8000
+      - "8001:8001"
     expose:
-      - "8000"
+      - 8001
     volumes:
-      - .:/myproject
-    networks:
-      - webnet
+      - .:/usr/src/app
+    environment:
+      API_KEY: 1b834e07-c68b-4bf6-96dd-ab7cdc62f07f
+      ENVIRON: kafka
 
-  nginx:
-    build: ./nginx
-    image: nginx:latest
-    container_name: "nginx_con"
-    depends_on:
-      - django
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-      - ./static:/static
-      - ./media:/media
-      # - /home/dowell/100096-DowellChat-v2/nginx/certificate.crt:/home/dowell/100096-DowellChat-v2/nginx/certificate.crt:ro
-      # - /home/dowell/100096-DowellChat-v2/nginx/private.key:/home/dowell/100096-DowellChat-v2/nginx/private.key:ro
-      - /etc/letsencrypt/live/www.dowellchat.uxlivinglab.online/fullchain.pem:/etc/letsencrypt/live/www.dowellchat.uxlivinglab.online/fullchain.pem:ro
-      - /etc/letsencrypt/live/www.dowellchat.uxlivinglab.online/privkey.pem:/etc/letsencrypt/live/www.dowellchat.uxlivinglab.online/privkey.pem:ro
-      
+  zookeeper:
+    image: zookeeper:latest
+    container_name: zookeeper
+    restart: always
     ports:
-      - "80:80"
-      - 443:443
-    networks:
-      - webnet
+      - "2181:2181"
 
-  
+  kafka:
+    image: ubuntu/kafka:latest
+    container_name: kafka
+    restart: always
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+      # topic creation
+      KAFKA_CREATE_TOPICS: "ticket_chat_topic_test:3:2,ticket_topic_test:3:2"   
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - zookeeper
+
+  kafka-consumer:
+    build:
+      context: .
+    container_name: kafka-consumer
+    restart: always
+    command: python3 manage.py launch_consumer
+    volumes:
+      - .:/usr/src/app
+    environment:
+      API_KEY: 1b834e07-c68b-4bf6-96dd-ab7cdc62f07f
+      ENVIRON: kafka
+    depends_on:
+      - chat-backend
+      - kafka
+      - zookeeper
+
+
+
+
+ # nginx:
+ #   build: ./nginx
+ #   image: nginx:latest
+ #   container_name: "nginx_con"
+ #   depends_on:
+ #     - django
+ #   volumes:
+ #     - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+ #     - ./static:/static
+ #     - ./media:/media
+ #     # - /home/dowell/100096-DowellChat-v2/nginx/certificate.crt:/home/dowell/100096-DowellChat-v2/nginx/certificate.crt:ro
+ #     # - /home/dowell/100096-DowellChat-v2/nginx/private.key:/home/dowell/100096-DowellChat-v2/nginx/private.key:ro
+ #     - /etc/letsencrypt/live/www.dowellchat.uxlivinglab.online/fullchain.pem:/etc/letsencrypt/live/www.dowellchat.uxlivinglab.online/fullchain.pem:ro
+ #     - /etc/letsencrypt/live/www.dowellchat.uxlivinglab.online/privkey.pem:/etc/letsencrypt/live/www.dowellchat.uxlivinglab.online/privkey.pem:ro
+    
+ #   ports:
+ #     - "80:80"
+ #     - 443:443
+ #   networks:
+ #     - webnet
+
+
+ # networks:
+#   webnet:
 networks:
-  webnet:
+    default:
+        name: webnet

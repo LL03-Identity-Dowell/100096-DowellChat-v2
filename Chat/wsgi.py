@@ -46,5 +46,5 @@ from api.views import sio
 application = socketio.WSGIApp(sio, django_app)
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
-pywsgi.WSGIServer(('', 8001), application,
+pywsgi.WSGIServer(('0.0.0.0', 8001), application,
                   handler_class=WebSocketHandler).serve_forever()

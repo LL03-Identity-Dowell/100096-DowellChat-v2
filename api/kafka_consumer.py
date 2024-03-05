@@ -1,4 +1,5 @@
 import json
+import os
 import sys 
 import threading
 from confluent_kafka import Consumer
@@ -21,7 +22,8 @@ from .views import sio
 
 #We want to run thread in an infinite loop
 running=True
-conf = {'bootstrap.servers': "localhost:9092",
+kafka_environ = os.getenv("ENVIRON")
+conf = {'bootstrap.servers': f"{kafka_environ}:9092",
         'auto.offset.reset': 'smallest',
         'group.id': "user_group"}
 #Topic

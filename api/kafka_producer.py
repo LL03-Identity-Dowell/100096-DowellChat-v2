@@ -5,7 +5,7 @@ import socket
 
 class ProducerTicketChat:
     def __init__(self) -> None:        
-        conf = {'bootstrap.servers': "localhost:9092",'client.id': socket.gethostname()}
+        conf = {'bootstrap.servers': "kafka:9092",'client.id': socket.gethostname()}
         self.producer = Producer(conf)
         self.topic='ticket_chat_topic_test'
 
@@ -18,7 +18,7 @@ class ProducerTicketChat:
 
 class ProducerCreateTicket:
     def __init__(self) -> None:        
-        conf = {'bootstrap.servers': "localhost:9092",'client.id': socket.gethostname()}
+        conf = {'bootstrap.servers': "kafka:9092",'client.id': socket.gethostname()}
         self.producer = Producer(conf)
         self.topic='ticket_topic_test'
 
