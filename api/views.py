@@ -1,5 +1,6 @@
 async_mode = 'gevent'
 # async_mode = "threading"
+from django.shortcuts import redirect
 import requests
 from .models import Message
 from rest_framework.decorators import api_view
@@ -2242,7 +2243,7 @@ def create_ticket(sid, message):
 
                 sio.emit('new_ticket', {'data': new_ticket_data, 'status': 'success', }, room=workspace_id)
                 
-              
+
                 return sio.emit('ticket_response', {'data': new_ticket_data, 'status': 'success', 'operation': 'create_ticket'}, room=sid)
                 
             else:
@@ -2364,7 +2365,7 @@ def generate_share_link(sid, message):
 
         link_id = ''.join([str(random.randint(0, 9)) for _ in range(20)])
         link = f"{url}?workspace_id={workspace_id}&link_id={link_id}"
-        master_link = f"http://127.0.0.1:8000/share/{link_id}"
+        master_link = f"http://127.0.0.1:8000/share/?link_id={link_id}&workspace_id={workspace_id}&link_key={api_key}"
 
         data = {
             "link_id":link_id,
@@ -2400,3 +2401,25 @@ def generate_share_link(sid, message):
         return sio.emit('share_link_response', {'data': error_message, 'status': 'failure', 'operation':'generate_share_link'}, room=sid)
 
 
+
+def redirect_to_product_link(request):
+    try:
+        link_id = request.GET['link_id']
+        workspace_id = request.GET['workspace_id']
+        api_key = request.GET['link_key']
+
+        db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+        coll_name = "master_link"
+        filters = {"link_id": link_id, "is_active": True, "available_links": {"$gt": 0}}
+
+        find_link = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters=filters,limit=1, offset=0)
+        print(find_link)
+        if find_link['success']:
+            if find_link['data']:
+                redirect_url = find_link['data'][0]['link']
+                return redirect(redirect_url)
+            
+        return HttpResponse(f"<html><body>Link has been exhuasted or Link is invalid</a></body></html>")
+    except KeyError as e:
+        
+        return HttpResponse(f"Missing parameter: {e}")

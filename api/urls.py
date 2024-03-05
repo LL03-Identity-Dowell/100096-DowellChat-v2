@@ -3,5 +3,6 @@ from . import views
 
 urlpatterns = [
     path('', views.index),
-    path('public/', views.public)
+    path('public/', views.public),
+    path('share/', views.redirect_to_product_link)
 ]
