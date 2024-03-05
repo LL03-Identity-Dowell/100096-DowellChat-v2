@@ -1,6 +1,5 @@
 version: "3.8"
 
-
 services:
   chat-backend:
     build:
@@ -15,7 +14,8 @@ services:
     volumes:
       - .:/usr/src/app
     environment:
-      API_KEY: 7908dc5a-6107-4da2-880d-c378866b980b
+      API_KEY: 1b834e07-c68b-4bf6-96dd-ab7cdc62f07f
+      ENVIRON: kafka
 
   zookeeper:
     image: zookeeper:latest
@@ -23,7 +23,6 @@ services:
     restart: always
     ports:
       - "2181:2181"
-
 
   kafka:
     image: ubuntu/kafka:latest
@@ -36,10 +35,26 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
 
       # topic creation
-      # KAFKA_CREATE_TOPICS: "chat_messages:1:1"      
+      KAFKA_CREATE_TOPICS: "ticket_chat_topic_test:3:2,ticket_topic_test:3:2"   
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
+      - zookeeper
+
+  kafka-consumer:
+    build:
+      context: .
+    container_name: kafka-consumer
+    restart: always
+    command: python3 manage.py launch_consumer
+    volumes:
+      - .:/usr/src/app
+    environment:
+      API_KEY: 1b834e07-c68b-4bf6-96dd-ab7cdc62f07f
+      ENVIRON: kafka
+    depends_on:
+      - chat-backend
+      - kafka
       - zookeeper
 
 
