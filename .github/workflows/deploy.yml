@@ -11,11 +11,13 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-
+    
+    # If we ever change to passwordless login
     # - name: Set up SSH
     #   uses: webfactory/ssh-agent@v0.5.3
     #   with:
     #     ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+    
     - name: Install sshpass
       run: sudo apt-get install -y sshpass
 
@@ -27,6 +29,5 @@ jobs:
         sshpass -p $SSH_PASSWORD ssh -o StrictHostKeyChecking=no root@216.158.239.24 << 'EOF'
           cd /home/dowell/DowellChat-backend
           git pull
-          docker-compose down
           docker-compose up -d --build
         EOF
