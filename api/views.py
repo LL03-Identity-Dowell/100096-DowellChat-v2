@@ -2203,7 +2203,7 @@ def create_ticket(sid, message):
         link_id = message['link_id']
         workspace_id = message['workspace_id']
         api_key = message['api_key']
-        product = message['product'].lower()
+        product = message['product'].upper()
         
         line_manager = assign_ticket_to_line_manager(api_key, f"{workspace_id}_CUSTOMER_SUPPORT_DB0", "line_manager", {})
         
@@ -2230,7 +2230,7 @@ def create_ticket(sid, message):
                     "is_closed": False,     
                     "created_at": created_at, 
                     "updated_at": created_at,
-                    "product": product.lower(),
+                    "product": product.upper(),
 
         }
 
@@ -2334,7 +2334,7 @@ def close_ticket(sid, message):
         api_key = message['api_key']
         product = message['product']
 
-        db_name = f"{workspace_id}_{product.lower()}"
+        db_name = f"{workspace_id}_{product.upper()}"
         
         collections = get_database_collections(api_key, db_name)
 
@@ -2409,7 +2409,7 @@ def generate_share_link(sid, message):
         link_id = ''.join([str(random.randint(0, 9)) for _ in range(20)])
         link = f"{url}?workspace_id={workspace_id}&link_id={link_id}"
         # master_link = f"http://127.0.0.1:8000/share/?link_id={link_id}&workspace_id={workspace_id}&link_key={api_key}"
-        master_link = f"https://www.dowellchat.uxlivinglab.online/share/?link_id={link_id}&workspace_id={workspace_id}&link_key={api_key}"
+        master_link = f"https://www.dowellchat.uxlivinglab.online/api/share/?link_id={link_id}&workspace_id={workspace_id}&link_key={api_key}"
 
         data = {
             "link_id":link_id,
