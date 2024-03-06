@@ -2198,18 +2198,33 @@ def get_ticket_messages(sid, message):
 def create_ticket(sid, message):
     try:
 
-        user_id = message['user_id']
-
+        email = message['email']
         created_at = message['created_at']
+        link_id = message['link_id']
         workspace_id = message['workspace_id']
         api_key = message['api_key']
-        product = message['product']
+        product = message['product'].lower()
         
         line_manager = assign_ticket_to_line_manager(api_key, f"{workspace_id}_CUSTOMER_SUPPORT_DB0", "line_manager", {})
         
+        link_db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+        link_coll_name = "master_link"
+        
+        link_response = data_cube.fetch_data(api_key=api_key, db_name=link_db_name, coll_name=link_coll_name,
+            filters={"link_id":link_id},
+            limit=1,
+            offset=0
+        )
+
+        if link_response['success']:
+            if link_response['data']:
+               usernames = link_response['data'][0]['usernames'] 
+               user_id = random.choice(usernames) if usernames else usernames[0]
+    
         data = {
                     "document_type": "ticket",
                     "user_id": user_id,
+                    "email": email,
                     "display_name": None,
                     "line_manager": line_manager, 
                     "is_closed": False,     
@@ -2234,17 +2249,45 @@ def create_ticket(sid, message):
                     '_id': response['data']['inserted_id'], 
                     "user_id": user_id,
                     "display_name": None,
-                    "line_manage": line_manager, 
+                    "line_manager": line_manager, 
                     "is_closed": False,     
                     "created_at": created_at, 
                     "updated_at": created_at,
-                    "product": product.upper(),
+                    "product": product,
                     }
 
                 sio.emit('new_ticket', {'data': new_ticket_data, 'status': 'success', }, room=workspace_id)
                 
+                sio.emit('ticket_response', {'data': new_ticket_data, 'status': 'success', 'operation': 'create_ticket'}, room=sid)
 
-                return sio.emit('ticket_response', {'data': new_ticket_data, 'status': 'success', 'operation': 'create_ticket'}, room=sid)
+                #Update the Master Link
+                new_available_link = link_response['data'][0]['available_links'] 
+                new_available_link -=1
+
+                is_active = True
+                if new_available_link == 0:
+                    is_active = False
+
+                usernames.remove(str(user_id))
+
+                new_product = link_response['data'][0]['product_distribution'].copy() 
+                new_product[product.upper()] -= 1
+
+
+                update_link_response = data_cube.update_data(
+                        api_key=api_key,
+                        db_name=link_db_name, 
+                        coll_name=link_coll_name,
+                        query={'link_id': link_id},
+                        update_data={
+                            "available_links": new_available_link,
+                            "product_distribution": new_product,
+                            "usernames": usernames,
+                            "is_active": is_active,
+                        }
+                    )
+
+                return
                 
             else:
                 return sio.emit('ticket_response', {'data':"Error Creating Room", 'status': 'failure', 'operation':'create_ticket'}, room=sid)
@@ -2365,7 +2408,8 @@ def generate_share_link(sid, message):
 
         link_id = ''.join([str(random.randint(0, 9)) for _ in range(20)])
         link = f"{url}?workspace_id={workspace_id}&link_id={link_id}"
-        master_link = f"http://127.0.0.1:8000/share/?link_id={link_id}&workspace_id={workspace_id}&link_key={api_key}"
+        # master_link = f"http://127.0.0.1:8000/share/?link_id={link_id}&workspace_id={workspace_id}&link_key={api_key}"
+        master_link = f"https://www.dowellchat.uxlivinglab.online/api/share/?link_id={link_id}&workspace_id={workspace_id}&link_key={api_key}"
 
         data = {
             "link_id":link_id,

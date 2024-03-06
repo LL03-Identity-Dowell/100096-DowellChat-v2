@@ -343,8 +343,7 @@ def assign_ticket_to_line_manager(api_key, db_name, coll_name, filters, limit=19
 
     line_managers = response['data']
     line_managers.sort(key=lambda x: (x['ticket_count'], x['positions_in_a_line']))  
-    print(line_managers)
-
+    
     for line_manager in line_managers:
         if line_manager['ticket_count'] == 0:
             line_manager['ticket_count'] += 1  
