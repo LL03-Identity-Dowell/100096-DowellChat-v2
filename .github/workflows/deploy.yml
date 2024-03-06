@@ -28,6 +28,6 @@ jobs:
       run: |
         sshpass -p $SSH_PASSWORD ssh -o StrictHostKeyChecking=no root@216.158.239.24 << 'EOF'
           cd /home/dowell/DowellChat-backend
-          git pull
+          git pull origin backend
           docker-compose up -d --build
         EOF
