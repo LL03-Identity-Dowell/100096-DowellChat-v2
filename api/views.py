@@ -2409,7 +2409,7 @@ def generate_share_link(sid, message):
         link_id = ''.join([str(random.randint(0, 9)) for _ in range(20)])
         link = f"{url}?workspace_id={workspace_id}&link_id={link_id}"
         # master_link = f"http://127.0.0.1:8000/share/?link_id={link_id}&workspace_id={workspace_id}&link_key={api_key}"
-        master_link = f"https://www.dowellchat.uxlivinglab.online/api/share/?link_id={link_id}&workspace_id={workspace_id}&link_key={api_key}"
+        master_link = f"https://www.dowellchat.uxlivinglab.online/share/?link_id={link_id}&workspace_id={workspace_id}&link_key={api_key}"
 
         data = {
             "link_id":link_id,
