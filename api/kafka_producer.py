@@ -1,11 +1,13 @@
 import json
 from confluent_kafka import Producer
 import socket
+import os
 
+kafka_environ = os.getenv("ENVIRON")
 
 class ProducerTicketChat:
     def __init__(self) -> None:        
-        conf = {'bootstrap.servers': "kafka:9092",'client.id': socket.gethostname()}
+        conf = {'bootstrap.servers': f"{kafka_environ}:9092",'client.id': socket.gethostname()}
         self.producer = Producer(conf)
         self.topic='ticket_chat_topic_test'
 
@@ -18,7 +20,7 @@ class ProducerTicketChat:
 
 class ProducerCreateTicket:
     def __init__(self) -> None:        
-        conf = {'bootstrap.servers': "kafka:9092",'client.id': socket.gethostname()}
+        conf = {'bootstrap.servers': f"{kafka_environ}:9092",'client.id': socket.gethostname()}
         self.producer = Producer(conf)
         self.topic='ticket_topic_test'
 

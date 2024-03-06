@@ -2379,7 +2379,6 @@ def generate_share_link(sid, message):
             "created_at": created_at
         }
 
-        print(data)
 
         db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
         coll_name = "master_link"
@@ -2423,3 +2422,40 @@ def redirect_to_product_link(request):
     except KeyError as e:
         
         return HttpResponse(f"Missing parameter: {e}")
+    
+@sio.event
+def get_share_link_details(sid, message):
+    try:
+        link_id = message['link_id']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+
+        db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+        coll_name = "master_link"
+
+        
+        
+        response = data_cube.fetch_data(
+            api_key=api_key,
+            db_name=db_name,
+            coll_name=coll_name,
+            filters={"link_id":link_id},
+            limit=1,
+            offset=0
+        )
+    
+        if response['success']:
+            if not response['data']:
+                return sio.emit('share_link_response', {'data': 'Link not found', 'status': 'failure', 'operation': 'get_share_link_details'}, room=sid)
+
+            else:
+                return sio.emit('share_link_response', {'data': response['data'], 'status': 'success', 'operation': 'get_share_link_details'}, room=sid)
+        else:
+            # Error in fetching data
+            return sio.emit('share_link_response', {'data': response['message'], 'status': 'failure', 'operation': 'get_share_link_details'}, room=sid)
+        
+        
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('share_link_response', {'data': error_message, 'status': 'failure', 'operation':'get_share_link_details'}, room=sid)
