@@ -1,6 +1,6 @@
 async_mode = 'gevent'
 # async_mode = "threading"
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 import requests
 from .models import Message
 from rest_framework.decorators import api_view
@@ -2462,10 +2462,15 @@ def redirect_to_product_link(request):
                 redirect_url = find_link['data'][0]['link']
                 return redirect(redirect_url)
             
-        return HttpResponse(f"<html><body>Link has been exhuasted or Link is invalid</a></body></html>")
-    except KeyError as e:
         
-        return HttpResponse(f"Missing parameter: {e}")
+        return render(request, 'api/error.html')
+    except KeyError as e:
+        context = {
+            "error": e
+        }
+        
+        return render(request, 'api/error.html', context)
+        # return HttpResponse(f"Missing parameter: {e}")
     
 @sio.event
 def get_share_link_details(sid, message):
