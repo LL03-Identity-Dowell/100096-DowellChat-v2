@@ -371,6 +371,42 @@ def assign_ticket_to_line_manager(api_key, db_name, coll_name, filters, limit=19
     else:
         return None
 
+
+def calculate_position_in_line(api_key, workspace_id):
+    try:
+        # Retrieve line managers
+        line_manager_db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+        line_manager_coll_name = "line_manager"
+        line_managers_data = data_cube.fetch_data(
+            api_key=api_key,
+            db_name=line_manager_db_name,
+            coll_name=line_manager_coll_name,
+            filters={},
+            limit=0,  # Fetch all line managers
+            offset=0
+        )
+
+        # Extract positions_in_a_line from line managers data
+        positions = [line_manager['positions_in_a_line'] for line_manager in line_managers_data['data']]
+
+        # Sort positions to find gaps and the highest position
+        positions.sort()
+        highest_position = 0
+        for pos in positions:
+            if pos - highest_position > 1:
+                return highest_position + 1  # Fill gap
+            highest_position = pos
+
+        # If no gaps, return the next position after the highest
+        return highest_position + 1
+    except Exception as e:
+        # Handle exceptions
+        raise e  
+
+# workspace_id = "646ba835ce27ae02d024a902"
+# next_position = calculate_position_in_line(api_key, workspace_id)
+# print("Next position for new line manager:", next_position)
+
 # Example usage:
 
 # db_name = "646ba835ce27ae02d024a902_CUSTOMER_SUPPORT_DB0"

@@ -1987,8 +1987,6 @@ def create_line_manager(sid, message):
     try:
         user_id = message['user_id']
         positions_in_a_line = message['positions_in_a_line']
-        average_serving_time = message['average_serving_time']
-        ticket_count = message['ticket_count']
         created_at = message['created_at']
         workspace_id = message['workspace_id']
         api_key = message['api_key']
@@ -1998,8 +1996,8 @@ def create_line_manager(sid, message):
         data = {
                 "user_id": user_id,
                 "positions_in_a_line":positions_in_a_line,
-                "average_serving_time":average_serving_time,
-                "ticket_count": ticket_count,
+                "average_serving_time":0,
+                "ticket_count": 0,
                 "is_active": True,
                 "created_at": created_at, 
         }
