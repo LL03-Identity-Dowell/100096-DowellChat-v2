@@ -2396,6 +2396,78 @@ def close_ticket(sid, message):
         return sio.emit('ticket_response', {'data': error_message, 'status': 'failure', 'operation':'close_ticket'}, room=sid)
 
 @sio.event
+def reopen_ticket(sid, message):
+    try:
+        ticket_id = message['ticket_id']
+        line_manager = message['line_manager']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name = f"{workspace_id}_{product.upper()}"
+        
+        collections = get_database_collections(api_key, db_name)
+
+        ticket_closed = False
+        for coll_name in collections:
+            response = data_cube.update_data(
+                api_key=api_key,
+                db_name=db_name,
+                coll_name=coll_name,
+                query={'_id': ticket_id},
+                update_data={'is_closed': False}
+            )
+            if response['success'] and response['message'] != '0 documents updated successfully!':
+                ticket_closed = True
+                sio.emit('ticket_response', {'data': "Ticket Reopened", 'status': 'success', 'operation': 'reopen_ticket'}, room=sid)
+                
+                # Update line manager's ticket count
+                line_manager_db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+                line_manager_coll_name = "line_manager"
+                line_manager_data = data_cube.fetch_data(
+                    api_key=api_key,
+                    db_name=line_manager_db_name,
+                    coll_name=line_manager_coll_name,
+                    filters={'user_id': line_manager},
+                    limit=1,
+                    offset=0
+                )
+
+                if line_manager_data:
+                    new_ticket_count = line_manager_data['data'][0]['ticket_count'] 
+                    new_ticket_count +=1
+                    line_manager_response = data_cube.update_data(
+                        api_key=api_key,
+                        db_name=line_manager_db_name,
+                        coll_name=line_manager_coll_name,
+                        query={'user_id': line_manager},
+                        update_data={"ticket_count":new_ticket_count}
+                    )
+
+
+                    if line_manager_response['success']:
+                        print(f"Ticket count updated for line manager: {line_manager}")
+                    else:
+                        print("Failed to update ticket count for line manager:", line_manager_response['message'])
+                else:
+                    print("Line manager not found:", line_manager)
+
+
+                break
+
+        if not ticket_closed:
+            sio.emit('ticket_response', {'data': "Ticket Already Reopened", 'status': 'success', 'operation': 'reopen_ticket'}, room=sid)    
+
+        return
+
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('ticket_response', {'data': error_message, 'status': 'failure', 'operation':'reopen_ticket'}, room=sid)
+
+
+""" SHARE LINK SECTION"""
+@sio.event
 def generate_share_link(sid, message):
     try:
         number_of_links = message['number_of_links']
