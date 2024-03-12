@@ -19,7 +19,8 @@ from .utils import (
     get_database_collections,
     fetch_data_from_collections,
     assign_ticket_to_line_manager,
-    check_daily_collection
+    check_daily_collection,
+    calculate_position_in_line
     )
 import os
 import json
@@ -1986,7 +1987,6 @@ def get_all_topics(sid, message):
 def create_line_manager(sid, message):
     try:
         user_id = message['user_id']
-        positions_in_a_line = message['positions_in_a_line']
         created_at = message['created_at']
         workspace_id = message['workspace_id']
         api_key = message['api_key']
@@ -1995,7 +1995,7 @@ def create_line_manager(sid, message):
         
         data = {
                 "user_id": user_id,
-                "positions_in_a_line":positions_in_a_line,
+                "positions_in_a_line": calculate_position_in_line(api_key, workspace_id),
                 "average_serving_time":0,
                 "ticket_count": 0,
                 "is_active": True,
