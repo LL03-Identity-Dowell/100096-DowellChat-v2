@@ -266,7 +266,6 @@ def check_daily_collection(workspace_id, product):
     else:
         return True
 
-# print(check_daily_collection("646ba835ce27ae02d024a902", "customer_support"))
 
 def get_database_collections(api_key, db_name):
     """
@@ -402,6 +401,76 @@ def calculate_position_in_line(api_key, workspace_id):
     except Exception as e:
         # Handle exceptions
         raise e  
+
+"""Dowell Mail API services"""
+def send_email(toname,toemail,subject,email_content):
+    url = "https://100085.pythonanywhere.com/api/email/"
+
+    payload = {
+        "toname": toname,
+        "toemail": toemail,
+        "subject": subject,
+        "email_content":email_content
+    }
+    response = requests.post(url, json=payload)
+    print(response.text)
+    return response.text
+
+
+EMAIL_FROM_WEBSITE = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Ticket Confirmation</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f7f7f7;">
+    <div style="max-width: 600px; margin: 20px auto; padding: 0; text-align: center;">
+        <div style="background-color: #f0f0f0; padding: 20px; border-radius: 15px 15px 0 0;">
+            <img src="https://www.uxlivinglab.org/wp-content/uploads/2023/08/logo-e1531386713115.webp" alt="Company Logo" style="max-width: 150px; height: auto;">
+        </div>
+        <div style="background-color: #fff; border-radius: 0 0 15px 15px; padding: 30px; margin-bottom: 20px;">
+            <h3 style="font-size: 24px; margin-bottom: 20px;">Your ticket {} has been opened</h3>
+            <p style="font-size: 18px; margin-bottom: 20px; text-align: left;">Hello Customer,</p>
+            <p style="font-size: 18px; margin-bottom: 20px; text-align: left;">Thank you for contacting us. Your ticket has been received and will be answered shortly. The details of your ticket are shown below:</p>
+            <div style="text-align: left; margin-bottom: 20px;">
+                <p><strong>Ticket ID:</strong> {}</p>
+                <p><strong>Priority:</strong> Normal</p>
+                <p><strong>Status:</strong> Open</p>
+            </div>
+            <a href="#" class="btn btn-primary btn-sm" style="font-size: 16px; padding: 10px 20px;">View Ticket</a>
+        </div>
+        <div style="font-size: 14px; margin-bottom: 20px;">
+            <p>DoWell UX LivingLab</p>
+        </div>
+    </div>
+</body>
+</html>
+
+"""
+# ticket_id = "65ccc6c3c9eccf87bac2a1f9"
+
+
+
+# # Format the template with context data
+# formatted_email = EMAIL_FROM_WEBSITE.format(ticket_id, ticket_id)
+
+# Print or use the formatted email
+# print(formatted_email)
+
+def is_valid_email(email):
+    # Regular expression pattern for a basic email address validation
+    email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+
+    # Use re.match to check if the email matches the pattern
+    if re.match(email_pattern, email):
+        return True
+    else:
+        return False
+
 
 # workspace_id = "646ba835ce27ae02d024a902"
 # next_position = calculate_position_in_line(api_key, workspace_id)

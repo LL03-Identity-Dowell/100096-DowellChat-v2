@@ -6,22 +6,7 @@ from .models import Message
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 from .serializers import MessageSerializer
-from .utils import (
-    processApiService, 
-    DataCubeConnection, 
-    create_cs_db_meta, 
-    check_db, 
-    check_collection, 
-    get_link_usernames,
-    get_room_details, 
-    get_safe_timestamp,
-    sanitize_filename,
-    get_database_collections,
-    fetch_data_from_collections,
-    assign_ticket_to_line_manager,
-    check_daily_collection,
-    calculate_position_in_line
-    )
+from .utils import *
 import os
 import json
 from django.http import HttpResponse
@@ -2285,6 +2270,7 @@ def create_ticket(sid, message):
                         }
                     )
 
+                
                 return
                 
             else:
