@@ -393,7 +393,7 @@ def calculate_position_in_line(api_key, workspace_id):
         highest_position = 0
         for pos in positions:
             if pos - highest_position > 1:
-                return highest_position + 1  # Fill gap
+                return highest_position + 1  
             highest_position = pos
 
         # If no gaps, return the next position after the highest
@@ -441,7 +441,8 @@ EMAIL_FROM_WEBSITE = """
                 <p><strong>Priority:</strong> Normal</p>
                 <p><strong>Status:</strong> Open</p>
             </div>
-            <a href="#" class="btn btn-primary btn-sm" style="font-size: 16px; padding: 10px 20px;">View Ticket</a>
+            <a href="https://www.dowellchat.uxlivinglab.online" style="display: inline-block; background-color: #007bff; color: #fff; text-decoration: none; font-size: 16px; padding: 10px 20px; border-radius: 5px; border: none;">View Ticket</a>
+
         </div>
         <div style="font-size: 14px; margin-bottom: 20px;">
             <p>DoWell UX LivingLab</p>
@@ -451,15 +452,6 @@ EMAIL_FROM_WEBSITE = """
 </html>
 
 """
-# ticket_id = "65ccc6c3c9eccf87bac2a1f9"
-
-
-
-# # Format the template with context data
-# formatted_email = EMAIL_FROM_WEBSITE.format(ticket_id, ticket_id)
-
-# Print or use the formatted email
-# print(formatted_email)
 
 def is_valid_email(email):
     # Regular expression pattern for a basic email address validation
@@ -472,9 +464,6 @@ def is_valid_email(email):
         return False
 
 
-# workspace_id = "646ba835ce27ae02d024a902"
-# next_position = calculate_position_in_line(api_key, workspace_id)
-# print("Next position for new line manager:", next_position)
 
 # Example usage:
 

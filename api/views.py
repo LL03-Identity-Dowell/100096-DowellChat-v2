@@ -2270,7 +2270,15 @@ def create_ticket(sid, message):
                         }
                     )
 
-                
+                """SENDING OF EMAIL"""
+
+                formatted_email = EMAIL_FROM_WEBSITE.format(response['data']['inserted_id'], response['data']['inserted_id'])
+                if is_valid_email(email):
+                    send_email(email, email, "New Ticket Confirmation", formatted_email)
+                else:
+                    print("Email is invalid")
+
+
                 return
                 
             else:
