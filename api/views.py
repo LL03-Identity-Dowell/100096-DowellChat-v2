@@ -2201,9 +2201,15 @@ def create_ticket(sid, message):
 
         if link_response['success']:
             if link_response['data']:
-               usernames = link_response['data'][0]['usernames'] 
-               user_id = random.choice(usernames) if usernames else usernames[0]
-    
+               usernames = link_response['data'][0]['usernames']
+               if usernames:
+                   user_id = random.choice(usernames) if usernames else usernames[0]
+               else:
+                   return sio.emit('ticket_response', {'data':"Can't create Room due to no public username in the link_id", 'status': 'failure', 'operation':'create_ticket'}, room=sid)
+                   
+
+        
+        
         data = {
                     "document_type": "ticket",
                     "user_id": user_id,
