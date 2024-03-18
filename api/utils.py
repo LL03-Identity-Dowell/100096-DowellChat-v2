@@ -158,7 +158,7 @@ ORG_ID = "646ba835ce27ae02d024a902"
 #     raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
 data_cube = DataCubeConnection()
 
-# reponse = data_cube.delete_data(api_key=api_key,db_name="6385c0f18eca0fb652c94558_customer_support", coll_name="6385c0f18eca0fb652c94558_category", query={"_id":"65b4ef7ac5b56cc2cabbbd0e"})
+# reponse = data_cube.delete_data(api_key=api_key,db_name="646ba835ce27ae02d024a902_WORKFLOW_AI", coll_name="2024_03_17_collection", query={})
 # print(reponse)
 # print(check_collection("646ba835ce27ae02d024a902", "server"))
 

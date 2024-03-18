@@ -2056,6 +2056,10 @@ def get_all_line_managers(sid, message):
         error_message = str(e)
         return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation': 'get_all_line_managers'}, room=sid)
 
+
+@sio.event
+def close_line (sid, message):
+    pass
 # @sio.event
 # def create_meta_settings(sid, message):
 #     try:
@@ -2523,7 +2527,7 @@ def redirect_to_product_link(request):
 
         db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
         coll_name = "master_link"
-        filters = {"link_id": link_id, "is_active": True, "available_links": {"$gt": 0}}
+        filters = {"link_id": link_id, "is_active": True, "available_links": { "$ne": 0 }}
 
         find_link = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters=filters,limit=1, offset=0)
         print(find_link)
