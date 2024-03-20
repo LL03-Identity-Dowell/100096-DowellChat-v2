@@ -17,6 +17,7 @@ from django.conf import settings
 
 from .kafka_producer import ProducerTicketChat
 import random
+import re
 
 
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
@@ -2058,8 +2059,101 @@ def get_all_line_managers(sid, message):
 
 
 @sio.event
-def close_line (sid, message):
-    pass
+def merge_line(sid, message):
+    try:
+        line_manager_1 = message['line_manager_1']
+        line_manager_2 = message['line_manager_2']
+        product = message['product']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        
+        db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+        coll_name = "line_manager"
+
+        line_manager_1_response = data_cube.fetch_data(
+            api_key=api_key,
+            db_name=db_name,
+            coll_name=coll_name,
+            filters={'user_id': line_manager_1},
+            limit=1,
+            offset=0
+        )
+        
+        line_manager_2_response = data_cube.fetch_data(
+            api_key=api_key,
+            db_name=db_name,
+            coll_name=coll_name,
+            filters={'user_id': line_manager_2},
+            limit=1,
+            offset=0
+        )
+
+        if line_manager_1_response['success'] and line_manager_2_response['success']:
+            if not line_manager_1_response['success'] and line_manager_2_response['success']:
+                return sio.emit('setting_response', {'data': 'Line Manager Not found ', 'status': 'failure', 'operation': 'merge_line'}, room=sid)
+            
+            product_db = f"{workspace_id}_{product}"
+            collections = get_database_collections(api_key, product_db)
+
+            total_tickets_updated = 0
+            for coll_name in collections:
+                response = data_cube.update_data(
+                    api_key=api_key,
+                    db_name=product_db,
+                    coll_name=coll_name,
+                    query={'line_manager': line_manager_1},
+                    update_data={'line_manager': line_manager_2}
+                )
+                print(response)
+                if response['success'] and response['message'] != '0 documents updated successfully!':
+                    match = re.search(r'(\d+) documents updated successfully', response['message'])
+                    if match:
+                        total_tickets_updated += int(match.group(1))
+
+
+            if total_tickets_updated > 0:
+                # Update line manager's ticket count
+                line_manage_1_ticket_count = line_manager_1_response['data'][0]['ticket_count'] - total_tickets_updated
+                line_manage_2_ticket_count = line_manager_2_response['data'][0]['ticket_count'] + total_tickets_updated
+
+                if line_manage_1_ticket_count  < 1:
+                    line_manage_1_ticket_count = 0
+                
+                update_line_manager_1_response = data_cube.update_data(
+                    api_key=api_key,
+                    db_name=db_name,
+                    coll_name="line_manager",
+                    query={'user_id': line_manager_1},
+                    update_data={"ticket_count": line_manage_1_ticket_count, "is_active": False}
+                )
+
+                update_line_manager_2_response = data_cube.update_data(
+                    api_key=api_key,
+                    db_name=db_name,
+                    coll_name="line_manager",
+                    query={'user_id': line_manager_2},
+                    update_data={"ticket_count": line_manage_2_ticket_count}
+                )
+
+
+
+                if update_line_manager_1_response['success'] and update_line_manager_2_response['success']:
+                    print(f"Ticket count updated for line managers")
+                else:
+                    print("Failed to update ticket count for line managers")
+                
+                sio.emit('setting_response', {'data': "Line Merged Successfully", 'status': 'success', 'operation': 'merge_line'}, room=sid)
+            else:
+                sio.emit('setting_response', {'data': "No Tickets Updated or Line Already Merged", 'status': 'failure', 'operation': 'merge_line'}, room=sid)
+            
+            return
+
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation': 'merge_line'}, room=sid)
+
+
 # @sio.event
 # def create_meta_settings(sid, message):
 #     try:
