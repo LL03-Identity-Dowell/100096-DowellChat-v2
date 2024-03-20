@@ -20,11 +20,7 @@ import random
 import re
 
 
-sio = socketio.Server(cors_allowed_origins=[
-    'http://localhost:5000',
-    'https://admin.socket.io',
-    "*"], 
-    async_mode=async_mode)
+sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
 sio.instrument(auth={
     'username': 'admin',
     'password': os.getenv("ADMIN_PASSWORD"),
