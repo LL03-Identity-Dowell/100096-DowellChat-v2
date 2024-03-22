@@ -2154,6 +2154,115 @@ def merge_line(sid, message):
         return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation': 'merge_line'}, room=sid)
 
 
+@sio.event
+def split_line(sid, message):
+    try:
+        line_manager_1 = message['line_manager_1']
+        line_manager_2 = message['line_manager_2']
+        product = message['product']
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+
+        db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+        coll_name = f"{workspace_id}_line_manager"
+
+        # Fetch line manager data
+        line_manager_1_response = data_cube.fetch_data(
+            api_key=api_key,
+            db_name=db_name,
+            coll_name=coll_name,
+            filters={'user_id': line_manager_1},
+            limit=1,
+            offset=0
+        )
+
+        line_manager_2_response = data_cube.fetch_data(
+            api_key=api_key,
+            db_name=db_name,
+            coll_name=coll_name,
+            filters={'user_id': line_manager_2},
+            limit=1,
+            offset=0
+        )
+
+
+        if line_manager_1_response['success'] and line_manager_2_response['success']:
+            if not line_manager_1_response['data'] or not line_manager_2_response['data']:
+                return sio.emit('setting_response', {'data': 'Line Manager Not found', 'status': 'failure', 'operation': 'split_line'}, room=sid)
+
+            # Calculate the ticket count split
+            line_manager_1_ticket_count = line_manager_1_response['data'][0]['ticket_count']
+            # Determine how many tickets to split
+            if line_manager_1_ticket_count % 2 == 0:  # Even ticket count
+                split_tickets = line_manager_1_ticket_count // 2
+            else:  # Odd ticket count
+                split_tickets = line_manager_1_ticket_count // 2 + 1
+
+            # Fetch collections
+            product_db = f"{workspace_id}_{product}"
+            collections = get_database_collections(api_key, product_db)
+            # Fetch tickets to update for line_manager_2 across all collections
+            total_tickets_updated = 0
+            for coll_name in collections:
+                tickets_to_update = data_cube.fetch_data(
+                    api_key=api_key,
+                    db_name=product_db,
+                    coll_name=coll_name,
+                    filters={'line_manager': line_manager_1, "is_closed": False},
+                    limit=split_tickets - total_tickets_updated,  # Adjust limit based on already updated tickets
+                    offset=0
+                )
+
+                for ticket in tickets_to_update['data']:
+                    response = data_cube.update_data(
+                        api_key=api_key,
+                        db_name=db_name,
+                        coll_name=coll_name,
+                        query={'_id': ticket['_id']},
+                        update_data={'line_manager': line_manager_2}
+                    )
+                    if response['success']:
+                        total_tickets_updated += 1
+
+
+                # Check if the required number of tickets have been updated
+                if total_tickets_updated >= split_tickets:
+                    break  # Exit loop if target number of tickets have been updated
+            
+            if total_tickets_updated == split_tickets:
+                # Update ticket count for line_manager_1
+                update_line_manager_1_response = data_cube.update_data(
+                    api_key=api_key,
+                    db_name=db_name,
+                    coll_name=f"{workspace_id}_line_manager",
+                    query={'user_id': line_manager_1},
+                    update_data={'ticket_count': line_manager_1_ticket_count - split_tickets}
+                )
+
+                # Update ticket count for line_manager_2
+                line_manager_2_ticket_count = line_manager_2_response['data'][0]['ticket_count'] + split_tickets
+                update_line_manager_2_response = data_cube.update_data(
+                    api_key=api_key,
+                    db_name=db_name,
+                    coll_name=f"{workspace_id}_line_manager",
+                    query={'user_id': line_manager_2},
+                    update_data={'ticket_count': line_manager_2_ticket_count}
+                )
+
+                if update_line_manager_1_response['success'] and update_line_manager_2_response['success']:
+                    return sio.emit('setting_response', {'data': "Line Split Successfully", 'status': 'success', 'operation': 'split_line'}, room=sid)
+                else:
+                    return sio.emit('setting_response', {'data': "Failed to update ticket counts for line managers", 'status': 'failure', 'operation': 'split_line'}, room=sid)
+            else:
+                return sio.emit('setting_response', {'data': "Failed to split tickets", 'status': 'failure', 'operation': 'split_line'}, room=sid)
+        else:
+            return sio.emit('setting_response', {'data': 'Failed to fetch line managers', 'status': 'failure', 'operation': 'split_line'}, room=sid)
+
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation': 'split_line'}, room=sid)
+
 # @sio.event
 # def create_meta_settings(sid, message):
 #     try:
