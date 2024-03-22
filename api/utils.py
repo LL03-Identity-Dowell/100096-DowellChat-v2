@@ -1,12 +1,14 @@
+from datetime import datetime, date
+from enum import Enum
+from urllib.parse import urlparse, parse_qs
+from dotenv import load_dotenv
+import re
 import os
 import requests
 import json
-from enum import Enum
-from dotenv import load_dotenv
+
 load_dotenv()
-from urllib.parse import urlparse, parse_qs
-import re
-from datetime import datetime, date
+
 
 class DBCrudOperation(Enum):
     FETCH = "fetch"
@@ -16,6 +18,8 @@ class DBCrudOperation(Enum):
 
 # The `DataCubeConnection` class provides methods for fetching, inserting, updating, and deleting data
 # from a data cube using CRUD operations.
+
+
 class DataCubeConnection:
     BASE_URL = "https://datacube.uxlivinglab.online/db_api/"
     CRUD_URL = BASE_URL + "crud/"
@@ -30,7 +34,7 @@ class DataCubeConnection:
             res = requests.put(url, json=payload)
         elif operation == DBCrudOperation.DELETE:
             res = requests.delete(url, json=payload)
-        else:    
+        else:
             res = requests.post(url, json=payload)
         return json.loads(res.text)
 
@@ -43,11 +47,11 @@ class DataCubeConnection:
             "filters": filters,
             "limit": limit,
             "offset": offset,
-            "payment":False
+            "payment": False
         }
         return self._make_request(DBCrudOperation.FETCH, payload)
 
-    def insert_data(self,api_key, db_name, coll_name, data):
+    def insert_data(self, api_key, db_name, coll_name, data):
         payload = {
             "api_key": api_key,
             "db_name": db_name,
@@ -83,36 +87,41 @@ def processApiService(api_key):
     """The purpose of this request is to process the API key 
     and determine if it is valid for the specified API service."""
     url = f'https://100105.pythonanywhere.com/api/v3/process-services/?type=api_service&api_key={api_key}'
-    
+
     payload = {
-        "service_id" : "DOWELL10039"
+        "service_id": "DOWELL10039"
     }
     response = requests.post(url, json=payload)
 
     return json.loads(response.text)
 
+
 def create_cs_db_meta(workspace_id):
     api_key = os.getenv("API_KEY")
     data_cube = DataCubeConnection()
 
-    is_db =  data_cube.fetch_data(api_key=api_key,db_name="customer_support_meta", coll_name="db_meta", filters={"name": f"{workspace_id}_customer_support"}, limit=1, offset=0)
+    is_db = data_cube.fetch_data(api_key=api_key, db_name="customer_support_meta", coll_name="db_meta", filters={
+                                 "name": f"{workspace_id}_customer_support"}, limit=1, offset=0)
     if not is_db['data']:
-        response = data_cube.insert_data(api_key=api_key,db_name="customer_support_meta", coll_name="server", data={"name":f"{workspace_id}_customer_support"})
+        response = data_cube.insert_data(api_key=api_key, db_name="customer_support_meta", coll_name="server", data={
+                                         "name": f"{workspace_id}_customer_support"})
         return response
     else:
         return "DB already exists"
-    
+
+
 def check_db(workspace_id, db_name=None):
     api_key = os.getenv("API_KEY")
     data_cube = DataCubeConnection()
 
     if db_name:
-        db_name=db_name
+        db_name = db_name
         coll_name = f"{workspace_id}_server"
     else:
         db_name = f"{workspace_id}_customer_support"
         coll_name = f"{workspace_id}_server"
-    db_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={}, limit=1, offset=0)
+    db_response = data_cube.fetch_data(
+        api_key=api_key, db_name=db_name, coll_name=coll_name, filters={}, limit=1, offset=0)
     if not db_response['success']:
         if "Database" in db_response['message']:
             return False
@@ -121,6 +130,8 @@ def check_db(workspace_id, db_name=None):
             return True
     else:
         return True
+
+
 def check_collection(workspace_id, coll, db_name=None):
     api_key = os.getenv("API_KEY")
     data_cube = DataCubeConnection()
@@ -132,7 +143,8 @@ def check_collection(workspace_id, coll, db_name=None):
         db_name = f"{workspace_id}_customer_support"
         coll_name = f"{workspace_id}_{coll}"
 
-    collection_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={}, limit=1, offset=0)
+    collection_response = data_cube.fetch_data(
+        api_key=api_key, db_name=db_name, coll_name=coll_name, filters={}, limit=1, offset=0)
     if not collection_response['success']:
         if "Collection" in collection_response['message']:
             url = "https://datacube.uxlivinglab.online/db_api/add_collection/"
@@ -143,9 +155,9 @@ def check_collection(workspace_id, coll, db_name=None):
                 "num_collections": 1
             }
             response = requests.post(url, json=data_to_add)
-            return True 
+            return True
         else:
-            return True   
+            return True
     else:
         return True
 
@@ -164,6 +176,7 @@ data_cube = DataCubeConnection()
 
 # reponse = data_cube.update_data(api_key=api_key,db_name="646ba835ce27ae02d024a902_CUSTOMER_SUPPORT_DB0", coll_name="line_manager", query={"user_id":"Charu_Dowell"},update_data={"ticket_count": 14})
 # print(reponse)
+
 
 def set_finalize(linkid):
     url = f"https://www.qrcodereviews.uxlivinglab.online/api/v3/masterlink/?link_id={linkid}"
@@ -193,7 +206,7 @@ def get_room_details(workspace_id, api_key, product, category_id):
     """
     The function `get_room_details` retrieves room details based on workspace ID, API key, product, and
     category ID.
-    
+
     :param workspace_id: Workspace ID is a unique identifier for a specific workspace or environment
     where the data is stored or accessed. It helps in distinguishing different workspaces within a
     system
@@ -214,7 +227,8 @@ def get_room_details(workspace_id, api_key, product, category_id):
     coll_name = f"{workspace_id}_public_room"
 
     if check_collection(workspace_id, "category"):
-        response = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=coll_name, filters={"category": category_id}, limit=20, offset=0)
+        response = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=coll_name, filters={
+                                        "category": category_id}, limit=20, offset=0)
         print(response)
         if response['success']:
             return response['data']
@@ -222,10 +236,12 @@ def get_room_details(workspace_id, api_key, product, category_id):
             return []
     else:
         return []
-    
+
+
 def sanitize_filename(filename):
     sanitized_filename = re.sub(r'[^\w.]+', '_', filename)
     return sanitized_filename
+
 
 def get_safe_timestamp():
     return datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')[:-3]
@@ -246,10 +262,11 @@ def check_daily_collection(workspace_id, product):
     data_cube = DataCubeConnection()
 
     db_name = f"{workspace_id}_{product}"
-    coll_name = f"{formatted_date}_collection"
+    coll_name = f"{workspace_id}_{formatted_date}_collection"
 
-    collection_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={}, limit=1, offset=0)
-    
+    collection_response = data_cube.fetch_data(
+        api_key=api_key, db_name=db_name, coll_name=coll_name, filters={}, limit=1, offset=0)
+
     if not collection_response['success']:
         if "Collection" in collection_response['message']:
             url = "https://datacube.uxlivinglab.online/db_api/add_collection/"
@@ -260,9 +277,9 @@ def check_daily_collection(workspace_id, product):
                 "num_collections": 1
             }
             response = requests.post(url, json=data_to_add)
-            return True 
+            return True
         else:
-            return True   
+            return True
     else:
         return True
 
@@ -283,19 +300,19 @@ def get_database_collections(api_key, db_name):
     }
     response = requests.get(url, json=payload)
     if response.json()['data']:
-        data = response.json()['data'][0]  
-        filtered_collections = [collection for collection in data if '_collection' in collection]
+        data = response.json()['data'][0]
+        filtered_collections = [
+            collection for collection in data if '_collection' in collection]
         return filtered_collections
     else:
         return []
-
 
 
 def fetch_data_from_collections(api_key, db_name, collections, filters, limit=50, offset=0):
     """
     This Python function fetches data from multiple collections using specified filters, limit, and
     offset parameters.
-    
+
     :param api_key: The `api_key` parameter is typically a unique identifier or authentication token
     that grants access to the API services. 
     :param db_name: The `db_name` parameter in the `fetch_data_from_collections` function refers to the
@@ -313,7 +330,8 @@ def fetch_data_from_collections(api_key, db_name, collections, filters, limit=50
     """
     data = []
     for coll_name in collections:
-        data_response = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=coll_name, filters=filters, limit=limit, offset=offset)
+        data_response = data_cube.fetch_data(
+            api_key=api_key, db_name=db_name, coll_name=coll_name, filters=filters, limit=limit, offset=offset)
         if data_response['data']:
             data.extend(data_response['data'])
     return data
@@ -341,11 +359,12 @@ def assign_ticket_to_line_manager(api_key, db_name, coll_name, filters, limit=19
     )
 
     line_managers = response['data']
-    line_managers.sort(key=lambda x: (x['ticket_count'], x['positions_in_a_line']))  
-    
+    line_managers.sort(key=lambda x: (
+        x['ticket_count'], x['positions_in_a_line']))
+
     for line_manager in line_managers:
         if line_manager['ticket_count'] == 0:
-            line_manager['ticket_count'] += 1  
+            line_manager['ticket_count'] += 1
             data_cube.update_data(
                 api_key=api_key,
                 db_name=db_name,
@@ -353,12 +372,12 @@ def assign_ticket_to_line_manager(api_key, db_name, coll_name, filters, limit=19
                 query={'_id': line_manager['_id']},
                 update_data={'ticket_count': line_manager['ticket_count']}
             )
-            return line_manager['user_id']  
+            return line_manager['user_id']
 
     # If all line managers have ongoing tickets, assign to the one with the lowest ticket_count and positions_in_a_line
     if line_managers:
         line_manager = line_managers[0]
-        line_manager['ticket_count'] += 1  
+        line_manager['ticket_count'] += 1
         data_cube.update_data(
             api_key=api_key,
             db_name=db_name,
@@ -386,31 +405,35 @@ def calculate_position_in_line(api_key, workspace_id):
         )
 
         # Extract positions_in_a_line from line managers data
-        positions = [line_manager['positions_in_a_line'] for line_manager in line_managers_data['data']]
+        positions = [line_manager['positions_in_a_line']
+                     for line_manager in line_managers_data['data']]
 
         # Sort positions to find gaps and the highest position
         positions.sort()
         highest_position = 0
         for pos in positions:
             if pos - highest_position > 1:
-                return highest_position + 1  
+                return highest_position + 1
             highest_position = pos
 
         # If no gaps, return the next position after the highest
         return highest_position + 1
     except Exception as e:
         # Handle exceptions
-        raise e  
+        raise e
+
 
 """Dowell Mail API services"""
-def send_email(toname,toemail,subject,email_content):
+
+
+def send_email(toname, toemail, subject, email_content):
     url = "https://100085.pythonanywhere.com/api/email/"
 
     payload = {
         "toname": toname,
         "toemail": toemail,
         "subject": subject,
-        "email_content":email_content
+        "email_content": email_content
     }
     response = requests.post(url, json=payload)
     print(response.text)
@@ -453,6 +476,7 @@ EMAIL_FROM_WEBSITE = """
 
 """
 
+
 def is_valid_email(email):
     # Regular expression pattern for a basic email address validation
     email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
@@ -462,7 +486,6 @@ def is_valid_email(email):
         return True
     else:
         return False
-
 
 
 # Example usage:

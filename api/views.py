@@ -2101,7 +2101,7 @@ def merge_line(sid, message):
                     api_key=api_key,
                     db_name=product_db,
                     coll_name=coll_name,
-                    query={'line_manager': line_manager_1},
+                    query={'line_manager': line_manager_1, "is_closed":False},
                     update_data={'line_manager': line_manager_2}
                 )
                 print(response)
@@ -2323,15 +2323,14 @@ def create_ticket(sid, message):
 
         formatted_date = str(date.today()).replace("-", "_")
         db_name = f"{workspace_id}_{product}"
-        coll_name = f"{formatted_date}_collection"
+        coll_name = f"{workspace_id}_{formatted_date}_collection"
 
         if check_daily_collection(workspace_id, product):
                             
             response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
-            
+            print(response)
             if response['success'] == True:
                 sio.enter_room(sid, response['data']['inserted_id'])
-        
                 new_ticket_data ={
                     '_id': response['data']['inserted_id'], 
                     "user_id": user_id,
@@ -2342,7 +2341,7 @@ def create_ticket(sid, message):
                     "updated_at": created_at,
                     "product": product,
                     }
-
+                
                 sio.emit('new_ticket', {'data': new_ticket_data, 'status': 'success', }, room=workspace_id)
                 
                 sio.emit('ticket_response', {'data': new_ticket_data, 'status': 'success', 'operation': 'create_ticket'}, room=sid)
