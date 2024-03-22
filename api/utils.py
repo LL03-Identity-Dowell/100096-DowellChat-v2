@@ -394,7 +394,7 @@ def calculate_position_in_line(api_key, workspace_id):
     try:
         # Retrieve line managers
         line_manager_db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
-        line_manager_coll_name = "line_manager"
+        line_manager_coll_name = f"{workspace_id}_line_manager"
         line_managers_data = data_cube.fetch_data(
             api_key=api_key,
             db_name=line_manager_db_name,

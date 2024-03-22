@@ -1894,7 +1894,7 @@ def create_topic(sid, message):
         }
         
         db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
-        coll_name = "topics"
+        coll_name = f"{workspace_id}_topics"
         topic_db = f"{workspace_id}_{name}"
 
         
@@ -1908,7 +1908,7 @@ def create_topic(sid, message):
             return sio.emit('setting_response', {'data':f"DB {workspace_id}_{name.upper()} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)    
 
         
-        if check_collection(workspace_id, "topics", db_name):
+        if check_collection(workspace_id, coll_name, db_name):
             
             check_topic = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"name":name},limit=200, offset=0)
             if check_topic['success']:
@@ -1935,12 +1935,12 @@ def get_all_topics(sid, message):
         
 
         db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
-        coll_name = "topics"
+        coll_name = f"{workspace_id}_topics"
 
         if not check_db(workspace_id, db_name):
             return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'get_all_topics'}, room=sid)
 
-        if check_collection(workspace_id, "topics", db_name):
+        if check_collection(workspace_id, coll_name, db_name):
 
             response = data_cube.fetch_data(
                 api_key=api_key,
@@ -1989,7 +1989,7 @@ def create_line_manager(sid, message):
         }
         
         db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
-        coll_name = "line_manager"
+        coll_name = f"{workspace_id}_line_manager"
 
         
 
@@ -1999,7 +1999,7 @@ def create_line_manager(sid, message):
 
        
         
-        if check_collection(workspace_id, "line_manager", db_name):
+        if check_collection(workspace_id, coll_name, db_name):
             
             check_user = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"user_id":user_id},limit=200, offset=0)
             if check_user['success']:
@@ -2026,12 +2026,12 @@ def get_all_line_managers(sid, message):
         
 
         db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
-        coll_name = "line_manager"
+        coll_name = f"{workspace_id}_line_manager"
 
         if not check_db(workspace_id, db_name):
             return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'get_all_line_managers'}, room=sid)
 
-        if check_collection(workspace_id, "line_manager", db_name):
+        if check_collection(workspace_id, coll_name, db_name):
 
             response = data_cube.fetch_data(
                 api_key=api_key,
@@ -2068,7 +2068,7 @@ def merge_line(sid, message):
         api_key = message['api_key']
         
         db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
-        coll_name = "line_manager"
+        coll_name = f"{workspace_id}_line_manager"
 
         line_manager_1_response = data_cube.fetch_data(
             api_key=api_key,
@@ -2122,7 +2122,7 @@ def merge_line(sid, message):
                 update_line_manager_1_response = data_cube.update_data(
                     api_key=api_key,
                     db_name=db_name,
-                    coll_name="line_manager",
+                    coll_name=f"{workspace_id}_line_manager",
                     query={'user_id': line_manager_1},
                     update_data={"ticket_count": line_manage_1_ticket_count, "is_active": False}
                 )
@@ -2130,7 +2130,7 @@ def merge_line(sid, message):
                 update_line_manager_2_response = data_cube.update_data(
                     api_key=api_key,
                     db_name=db_name,
-                    coll_name="line_manager",
+                    coll_name=f"{workspace_id}_line_manager",
                     query={'user_id': line_manager_2},
                     update_data={"ticket_count": line_manage_2_ticket_count}
                 )
@@ -2286,10 +2286,10 @@ def create_ticket(sid, message):
         api_key = message['api_key']
         product = message['product'].upper()
         
-        line_manager = assign_ticket_to_line_manager(api_key, f"{workspace_id}_CUSTOMER_SUPPORT_DB0", "line_manager", {})
+        line_manager = assign_ticket_to_line_manager(api_key, f"{workspace_id}_CUSTOMER_SUPPORT_DB0", f"{workspace_id}_line_manager", {})
         
         link_db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
-        link_coll_name = "master_link"
+        link_coll_name = f"{workspace_id}_master_link"
         
         link_response = data_cube.fetch_data(api_key=api_key, db_name=link_db_name, coll_name=link_coll_name,
             filters={"link_id":link_id},
@@ -2448,7 +2448,7 @@ def close_ticket(sid, message):
                 
                 # Update line manager's ticket count
                 line_manager_db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
-                line_manager_coll_name = "line_manager"
+                line_manager_coll_name = f"{workspace_id}_line_manager"
                 line_manager_data = data_cube.fetch_data(
                     api_key=api_key,
                     db_name=line_manager_db_name,
@@ -2518,7 +2518,7 @@ def reopen_ticket(sid, message):
                 
                 # Update line manager's ticket count
                 line_manager_db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
-                line_manager_coll_name = "line_manager"
+                line_manager_coll_name = f"{workspace_id}_line_manager"
                 line_manager_data = data_cube.fetch_data(
                     api_key=api_key,
                     db_name=line_manager_db_name,
@@ -2592,7 +2592,7 @@ def generate_share_link(sid, message):
 
 
         db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
-        coll_name = "master_link"
+        coll_name = f"{workspace_id}_master_link"
   
         #Check if the DB0 Exists
         if not check_db(workspace_id, db_name):
@@ -2619,7 +2619,7 @@ def redirect_to_product_link(request):
         api_key = request.GET['link_key']
 
         db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
-        coll_name = "master_link"
+        coll_name = f"{workspace_id}_master_link"
         filters = {"link_id": link_id, "is_active": True, "available_links": { "$ne": 0 }}
 
         find_link = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters=filters,limit=1, offset=0)
@@ -2647,7 +2647,7 @@ def get_share_link_details(sid, message):
         api_key = message['api_key']
 
         db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
-        coll_name = "master_link"
+        coll_name = f"{workspace_id}_master_link"
 
         
         
