@@ -2598,7 +2598,7 @@ def generate_share_link(sid, message):
         if not check_db(workspace_id, db_name):
             return sio.emit('share_link_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'generate_share_link'}, room=sid)
 
-        if check_collection(workspace_id, "master_link", db_name):            
+        if check_collection(workspace_id, coll_name, db_name):            
             response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
 
             if response['success'] == True:
