@@ -77,7 +77,7 @@ class ChatCreatedListener(threading.Thread):
 
                     formatted_date = str(date.today()).replace("-", "_")
                     db_name = f"{workspace_id}_{product}"
-                    coll_name = f"{workspace_id}_{formatted_date}_collection"
+                    coll_name = f"{workspace_id}_{formatted_date}_{product}_collection"
 
                     
                     # #handle Setting of Message to MongoDB

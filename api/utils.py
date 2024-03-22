@@ -262,7 +262,7 @@ def check_daily_collection(workspace_id, product):
     data_cube = DataCubeConnection()
 
     db_name = f"{workspace_id}_{product}"
-    coll_name = f"{workspace_id}_{formatted_date}_collection"
+    coll_name = f"{workspace_id}_{formatted_date}_{product}_collection"
 
     collection_response = data_cube.fetch_data(
         api_key=api_key, db_name=db_name, coll_name=coll_name, filters={}, limit=1, offset=0)

@@ -2323,7 +2323,7 @@ def create_ticket(sid, message):
 
         formatted_date = str(date.today()).replace("-", "_")
         db_name = f"{workspace_id}_{product}"
-        coll_name = f"{workspace_id}_{formatted_date}_collection"
+        coll_name = f"{workspace_id}_{formatted_date}_{product}_collection"
 
         if check_daily_collection(workspace_id, product):
                             
@@ -2403,7 +2403,6 @@ def get_tickets(sid, message):
         db_name = f"{workspace_id}_{product.upper()}"
         
         collections = get_database_collections(api_key, db_name)
-        
         ticket_filters = {"document_type": "ticket"}
         tickets = fetch_data_from_collections(api_key, db_name, collections, ticket_filters)
 
