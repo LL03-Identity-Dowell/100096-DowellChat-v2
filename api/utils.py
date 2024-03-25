@@ -58,6 +58,7 @@ class DataCubeConnection:
             "coll_name": coll_name,
             "operation": DBCrudOperation.INSERT.value,
             "data": data,
+            "payment": False
         }
         return self._make_request(DBCrudOperation.INSERT, payload)
 
@@ -69,6 +70,7 @@ class DataCubeConnection:
             "operation": DBCrudOperation.UPDATE.value,
             "query": query,
             "update_data": update_data,
+            "payment": False
         }
         return self._make_request(DBCrudOperation.UPDATE, payload)
 
@@ -79,6 +81,7 @@ class DataCubeConnection:
             "coll_name": coll_name,
             "operation": DBCrudOperation.DELETE.value,
             "query": query,
+            "payment": False
         }
         return self._make_request(DBCrudOperation.DELETE, payload)
 
@@ -486,20 +489,3 @@ def is_valid_email(email):
         return True
     else:
         return False
-
-
-# Example usage:
-
-# db_name = "646ba835ce27ae02d024a902_CUSTOMER_SUPPORT_DB0"
-# coll_name = "line_manager"
-# filters = {}
-
-# line_manager_id = assign_ticket_to_line_manager(api_key, db_name, coll_name, filters)
-# if line_manager_id:
-#     print("Ticket assigned to line manager:", line_manager_id)
-# else:
-#     print("No line manager available.")
-
-
-# reponse = data_cube.update_data(api_key=api_key,db_name="646ba835ce27ae02d024a902_CUSTOMER_SUPPORT_DB0", coll_name="line_manager", query={"user_id":"646ba835ce27ae02d024a902"},update_data={"ticket_count":6})
-# print(reponse)
