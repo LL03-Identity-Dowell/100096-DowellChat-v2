@@ -25,8 +25,6 @@ class DataCubeConnection:
     CRUD_URL = BASE_URL + "crud/"
     GET_DATA_URL = BASE_URL + "get_data/"
 
-    # def __init__(self, api_key):
-    #     self.api_key = api_key
 
     def _make_request(self, operation, payload):
         url = self.GET_DATA_URL if operation == DBCrudOperation.FETCH else self.CRUD_URL
@@ -99,8 +97,7 @@ def processApiService(api_key):
     return json.loads(response.text)
 
 
-def create_cs_db_meta(workspace_id):
-    api_key = os.getenv("API_KEY")
+def create_cs_db_meta(api_key, workspace_id):
     data_cube = DataCubeConnection()
 
     is_db = data_cube.fetch_data(api_key=api_key, db_name="customer_support_meta", coll_name="db_meta", filters={
@@ -113,8 +110,7 @@ def create_cs_db_meta(workspace_id):
         return "DB already exists"
 
 
-def check_db(workspace_id, db_name=None):
-    api_key = os.getenv("API_KEY")
+def check_db(workspace_id, api_key, db_name=None):
     data_cube = DataCubeConnection()
 
     if db_name:
@@ -135,8 +131,7 @@ def check_db(workspace_id, db_name=None):
         return True
 
 
-def check_collection(workspace_id, coll, db_name=None):
-    api_key = os.getenv("API_KEY")
+def check_collection(api_key, workspace_id, coll, db_name=None):
     data_cube = DataCubeConnection()
 
     if db_name:
@@ -165,29 +160,8 @@ def check_collection(workspace_id, coll, db_name=None):
         return True
 
 
-"""DATACUBE USAGE"""
-api_key = os.getenv("API_KEY")
 
-ORG_ID = "646ba835ce27ae02d024a902"
-# if api_key is None:
-#     raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
 data_cube = DataCubeConnection()
-
-# reponse = data_cube.delete_data(api_key=api_key,db_name="646ba835ce27ae02d024a902_CUSTOMER_SUPPORT_DB0", coll_name="topics", query={"name":"customer_support"})
-# print(reponse)
-# print(check_collection("646ba835ce27ae02d024a902", "server"))
-
-# reponse = data_cube.update_data(api_key=api_key,db_name="646ba835ce27ae02d024a902_CUSTOMER_SUPPORT_DB0", coll_name="line_manager", query={"user_id":"Charu_Dowell"},update_data={"ticket_count": 14})
-# print(reponse)
-
-
-def set_finalize(linkid):
-    url = f"https://www.qrcodereviews.uxlivinglab.online/api/v3/masterlink/?link_id={linkid}"
-    payload = {
-        "is_opened": True,
-    }
-    response = requests.put(url, json=payload)
-    return response.text
 
 
 def get_link_usernames(links):
@@ -250,18 +224,12 @@ def get_safe_timestamp():
     return datetime.utcnow().strftime('%Y%m%d_%H%M%S%f')[:-3]
 
 
-# workspace_id = "6385c0f18eca0fb652c94558"
-# api_key = "1b834e07-c68b-4bf6-96dd-ab7cdc62f07f"
-# product="customer_support"
-# category_id = "65ba4d6ec5b56cc2cabc9221"
-
-def check_daily_collection(workspace_id, product):
+def check_daily_collection(api_key, workspace_id, product):
     """
     product=db_name
     """
     formatted_date = str(date.today()).replace("-", "_")
 
-    api_key = os.getenv("API_KEY")
     data_cube = DataCubeConnection()
 
     db_name = f"{workspace_id}_{product}"

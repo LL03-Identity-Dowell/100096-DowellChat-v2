@@ -78,10 +78,10 @@ def get_user_servers(sid, message):
         db_name = f"{workspace_id}_{product}"
         coll_name = f"{workspace_id}_server"
 
-        if not check_db(workspace_id):
+        if not check_db(workspace_id, api_key):
             return sio.emit('server_response', {'data':"No DB found for the Workspace", 'status': 'failure', 'operation':'get_user_servers'}, room=sid)
 
-        if check_collection(workspace_id, "server"):
+        if check_collection(api_key, workspace_id, "server"):
 
             if product == "customer_support":
                 response = data_cube.fetch_data(
@@ -148,9 +148,9 @@ def create_server(sid, message):
         db_name = f"{workspace_id}_{product}"
         coll_name = f"{workspace_id}_server"
 
-        if not check_db(workspace_id):
+        if not check_db(workspace_id, api_key):
             return sio.emit('server_response', {'data':"No DB found for the Workspace", 'status': 'failure', 'operation':'create_server'}, room=sid)
-        if check_collection(workspace_id, "server"):
+        if check_collection(api_key, workspace_id, "server"):
             response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
 
             if response['success'] == True:
@@ -965,7 +965,7 @@ def cs_create_category(sid, message):
         if is_server['data'] ==[]:
             return sio.emit('category_response', {'data': 'Server not found', 'status': 'failure', 'operation':'create_category'}, room=sid)
 
-        if check_collection(workspace_id, "category"):
+        if check_collection(api_key, workspace_id, "category"):
                 
             response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
             
@@ -992,7 +992,7 @@ def cs_get_server_category(sid, message):
         db_name = f"{workspace_id}_{product}"
         coll_name = f"{workspace_id}_category"
 
-        if check_collection(workspace_id, "category"):
+        if check_collection(api_key, workspace_id, "category"):
             response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"server_id": server_id}, limit=199, offset=0)
             if response['success']:
                 if not response['data']:
@@ -1066,7 +1066,7 @@ def cs_get_user_category(sid, message):
         )
         
         if response_owner['success'] and response_owner['data'] and response_id['success'] and response_id['data']:
-            if check_collection(workspace_id, "category"):
+            if check_collection(api_key, workspace_id, "category"):
                 new_response = data_cube.fetch_data(
                     api_key=api_key,
                     db_name=db_name,
@@ -1091,7 +1091,7 @@ def cs_get_user_category(sid, message):
                                
                         return
 
-        if check_collection(workspace_id, "category"):
+        if check_collection(api_key, workspace_id, "category"):
             new_response = data_cube.fetch_data(
                 api_key=api_key,
                 db_name=db_name,
@@ -1136,7 +1136,7 @@ def cs_get_category_room(sid, message):
         db_name = f"{workspace_id}_{product}"
         coll_name = f"{workspace_id}_public_room"
 
-        if check_collection(workspace_id, "category"):
+        if check_collection(api_key, workspace_id, "category"):
             response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"category": category_id}, limit=20, offset=0)
             if response['success']:
                 if not response['data']:
@@ -1315,8 +1315,8 @@ def create_public_room(sid, message):
                 "created_at": created_at, 
         }        
 
-        if check_collection(workspace_id, "public_room"):
-            check_collection(workspace_id, "public_chat")   
+        if check_collection(api_key, workspace_id, "public_room"):
+            check_collection(api_key, workspace_id, "public_chat")   
 
             is_room = data_cube.fetch_data(api_key=api_key, db_name=db_name, coll_name=coll_name, filters={"name": name}, limit=1, offset=0)
 
@@ -1608,7 +1608,7 @@ def get_used_usernames(sid, message):
         db_name = f"{workspace_id}_{product}"
         coll_name = f"{workspace_id}_master_link"
 
-        check_collection(workspace_id, "master_link")
+        check_collection(api_key, workspace_id, "master_link")
         response = data_cube.fetch_data(api_key=my_api_key,db_name=db_name, coll_name=coll_name, filters={"workspace_id": workspace_id}, limit=1, offset=0)
         if response['success']:
             return sio.emit('master_link_response', {'data': response['data'], 'status': 'success', 'operation': 'get_used_usernames'}, room=sid)
@@ -1623,6 +1623,7 @@ def create_master_link(sid, message):
         company_id = message['workspace_id']
         links = message['links']
         job_name = message['job_name']
+        api_key = message['api_key']
         url = "https://www.qrcodereviews.uxlivinglab.online/api/v3/qr-code/"
 
         db_name = f"{company_id}_{job_name}"
@@ -1631,7 +1632,7 @@ def create_master_link(sid, message):
         is_First = False
         
 
-        check_collection(company_id, "master_link")
+        check_collection(api_key, company_id, "master_link")
         coll_response = data_cube.fetch_data(api_key=my_api_key,db_name=db_name, coll_name=coll_name, filters={"workspace_id": company_id}, limit=1, offset=0)
         if coll_response['success']:
             if not coll_response['data']:
@@ -1900,15 +1901,15 @@ def create_topic(sid, message):
         
 
         #Check if the DB0 Exists
-        if not check_db(workspace_id, db_name):
+        if not check_db(workspace_id, api_key, db_name):
             return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)
 
         #Check if the DB for the topic exists
-        if not check_db(workspace_id, topic_db):
+        if not check_db(workspace_id, api_key, topic_db):
             return sio.emit('setting_response', {'data':f"DB {workspace_id}_{name.upper()} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)    
 
         
-        if check_collection(workspace_id, coll_name, db_name):
+        if check_collection(api_key, workspace_id, coll_name, db_name):
             
             check_topic = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"name":name},limit=200, offset=0)
             if check_topic['success']:
@@ -1937,10 +1938,10 @@ def get_all_topics(sid, message):
         db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
         coll_name = f"{workspace_id}_topics"
 
-        if not check_db(workspace_id, db_name):
+        if not check_db(workspace_id, api_key, db_name):
             return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'get_all_topics'}, room=sid)
 
-        if check_collection(workspace_id, coll_name, db_name):
+        if check_collection(api_key, workspace_id, coll_name, db_name):
 
             response = data_cube.fetch_data(
                 api_key=api_key,
@@ -1994,12 +1995,12 @@ def create_line_manager(sid, message):
         
 
         #Check if the DB0 Exists
-        if not check_db(workspace_id, db_name):
+        if not check_db(workspace_id, api_key, db_name):
             return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
 
        
         
-        if check_collection(workspace_id, coll_name, db_name):
+        if check_collection(api_key, workspace_id, coll_name, db_name):
             
             check_user = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"user_id":user_id},limit=200, offset=0)
             if check_user['success']:
@@ -2028,10 +2029,10 @@ def get_all_line_managers(sid, message):
         db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
         coll_name = f"{workspace_id}_line_manager"
 
-        if not check_db(workspace_id, db_name):
+        if not check_db(workspace_id, api_key, db_name):
             return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'get_all_line_managers'}, room=sid)
 
-        if check_collection(workspace_id, coll_name, db_name):
+        if check_collection(api_key, workspace_id, coll_name, db_name):
 
             response = data_cube.fetch_data(
                 api_key=api_key,
@@ -2434,7 +2435,7 @@ def create_ticket(sid, message):
         db_name = f"{workspace_id}_{product}"
         coll_name = f"{workspace_id}_{formatted_date}_{product}_collection"
 
-        if check_daily_collection(workspace_id, product):
+        if check_daily_collection(api_key, workspace_id, product):
                             
             response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
             print(response)
@@ -2703,10 +2704,10 @@ def generate_share_link(sid, message):
         coll_name = f"{workspace_id}_master_link"
   
         #Check if the DB0 Exists
-        if not check_db(workspace_id, db_name):
+        if not check_db(workspace_id, api_key, db_name):
             return sio.emit('share_link_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'generate_share_link'}, room=sid)
 
-        if check_collection(workspace_id, coll_name, db_name):            
+        if check_collection(api_key, workspace_id, coll_name, db_name):            
             response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
 
             if response['success'] == True:

@@ -7,15 +7,7 @@ from confluent_kafka import KafkaError
 from confluent_kafka import KafkaException
 from datetime import date
 from .utils import (
-    processApiService, 
     DataCubeConnection, 
-    create_cs_db_meta, 
-    check_db, 
-    check_collection, 
-    get_link_usernames,
-    get_room_details, 
-    get_safe_timestamp,
-    sanitize_filename,
     check_daily_collection
     )
 from .views import sio
@@ -81,7 +73,7 @@ class ChatCreatedListener(threading.Thread):
 
                     
                     # #handle Setting of Message to MongoDB
-                    if check_daily_collection(workspace_id, product):
+                    if check_daily_collection(api_key, workspace_id, product):
                             
                         response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=message)
                         
