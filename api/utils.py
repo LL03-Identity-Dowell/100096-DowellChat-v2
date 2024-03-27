@@ -124,9 +124,6 @@ def check_db(workspace_id, api_key, db_name=None):
     if not db_response['success']:
         if "Database" in db_response['message']:
             return False
-        else:
-            create_cs_db_meta(workspace_id)
-            return True
     else:
         return True
 
