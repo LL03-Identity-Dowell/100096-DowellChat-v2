@@ -120,10 +120,12 @@ def check_db(workspace_id, api_key, db_name=None):
         db_name = f"{workspace_id}_customer_support"
         coll_name = f"{workspace_id}_server"
     db_response = data_cube.fetch_data(
-        api_key=api_key, db_name=db_name, coll_name=coll_name, filters={}, limit=1, offset=0)
+        api_key=api_key, db_name=db_name, coll_name=coll_name, filters={}, limit=1, offset=0) 
     if not db_response['success']:
         if "Database" in db_response['message']:
             return False
+        else:
+            return True
     else:
         return True
 
