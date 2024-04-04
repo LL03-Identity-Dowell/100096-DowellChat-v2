@@ -1891,13 +1891,17 @@ def create_topic(sid, message):
         
         data = {
                 "name": name,
+                "db_name": assign_database_to_product(workspace_id, api_key),
                 "created_at": created_at, 
         }
+
+        print(data)
         
         db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
         coll_name = f"{workspace_id}_topics"
-        topic_db = f"{workspace_id}_{name}"
+        topic_db = assign_database_to_product(workspace_id, api_key)
 
+        print(topic_db)
         
 
         #Check if the DB0 Exists
@@ -1906,7 +1910,7 @@ def create_topic(sid, message):
 
         #Check if the DB for the topic exists
         if not check_db(workspace_id, api_key, topic_db):
-            return sio.emit('setting_response', {'data':f"DB {workspace_id}_{name.upper()} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)    
+            return sio.emit('setting_response', {'data':f"DB {topic_db} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)    
 
         
         if check_collection(api_key, workspace_id, coll_name, db_name):

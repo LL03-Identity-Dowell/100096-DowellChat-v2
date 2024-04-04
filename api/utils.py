@@ -456,3 +456,24 @@ def is_valid_email(email):
         return True
     else:
         return False
+
+
+def assign_database_to_product(workspace_id, api_key):
+    check_topic = data_cube.fetch_data(
+        api_key=api_key, 
+        db_name=f"{workspace_id}_CUSTOMER_SUPPORT_DB0", 
+        coll_name=f"{workspace_id}_topics", 
+        filters={},
+        limit=200, 
+        offset=0)
+    
+    
+    if check_topic.get('success', False) and not check_topic.get('data'):
+        return f"{workspace_id}_DB_TOPIC_1"
+    
+    else:
+        count = len(check_topic.get('data', []))
+        print(count)
+        next_db_index = count + 1
+        return f"{workspace_id}_DB_TOPIC_{next_db_index}"
+    
