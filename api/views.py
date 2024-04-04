@@ -1894,14 +1894,11 @@ def create_topic(sid, message):
                 "db_name": assign_database_to_product(workspace_id, api_key),
                 "created_at": created_at, 
         }
-
-        print(data)
         
         db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
         coll_name = f"{workspace_id}_topics"
         topic_db = assign_database_to_product(workspace_id, api_key)
 
-        print(topic_db)
         
 
         #Check if the DB0 Exists
@@ -2097,7 +2094,7 @@ def merge_line(sid, message):
             if not line_manager_1_response['success'] and line_manager_2_response['success']:
                 return sio.emit('setting_response', {'data': 'Line Manager Not found ', 'status': 'failure', 'operation': 'merge_line'}, room=sid)
             
-            product_db = f"{workspace_id}_{product}"
+            product_db = map_product_to_db(workspace_id, api_key, product)
             collections = get_database_collections(api_key, product_db)
 
             total_tickets_updated = 0
@@ -2109,7 +2106,7 @@ def merge_line(sid, message):
                     query={'line_manager': line_manager_1, "is_closed":False},
                     update_data={'line_manager': line_manager_2}
                 )
-                print(response)
+                
                 if response['success'] and response['message'] != '0 documents updated successfully!':
                     match = re.search(r'(\d+) documents updated successfully', response['message'])
                     if match:
@@ -2204,7 +2201,7 @@ def split_line(sid, message):
                 split_tickets = line_manager_1_ticket_count // 2 + 1
 
             # Fetch collections
-            product_db = f"{workspace_id}_{product}"
+            product_db = map_product_to_db(workspace_id, api_key, product)
             collections = get_database_collections(api_key, product_db)
             # Fetch tickets to update for line_manager_2 across all collections
             total_tickets_updated = 0
@@ -2353,7 +2350,7 @@ def get_ticket_messages(sid, message):
         api_key = message['api_key']
         product = message['product']
 
-        db_name = f"{workspace_id}_{product.upper()}"
+        db_name = map_product_to_db(workspace_id, api_key, product)
         coll_name = "2024_02_26_collection"
         response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"document_type":"ticket", "_id":ticket}, limit=1, offset=0)
 
@@ -2436,13 +2433,14 @@ def create_ticket(sid, message):
         }
 
         formatted_date = str(date.today()).replace("-", "_")
-        db_name = f"{workspace_id}_{product}"
+        db_name = map_product_to_db(workspace_id, api_key, product)
+        
         coll_name = f"{workspace_id}_{formatted_date}_{product}_collection"
 
         if check_daily_collection(api_key, workspace_id, product):
                             
             response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
-            print(response)
+            
             if response['success'] == True:
                 sio.enter_room(sid, response['data']['inserted_id'])
                 new_ticket_data ={
@@ -2514,7 +2512,7 @@ def get_tickets(sid, message):
         api_key = message['api_key']
         product = message['product']
 
-        db_name = f"{workspace_id}_{product.upper()}"
+        db_name =map_product_to_db(workspace_id, api_key, product)
         
         collections = get_database_collections(api_key, db_name)
         ticket_filters = {"document_type": "ticket"}
@@ -2542,7 +2540,7 @@ def close_ticket(sid, message):
         api_key = message['api_key']
         product = message['product']
 
-        db_name = f"{workspace_id}_{product.upper()}"
+        db_name = map_product_to_db(workspace_id, api_key, product)
         
         collections = get_database_collections(api_key, db_name)
 
@@ -2612,7 +2610,7 @@ def reopen_ticket(sid, message):
         api_key = message['api_key']
         product = message['product']
 
-        db_name = f"{workspace_id}_{product.upper()}"
+        db_name = map_product_to_db(workspace_id, api_key, product)
         
         collections = get_database_collections(api_key, db_name)
 
@@ -2736,7 +2734,7 @@ def redirect_to_product_link(request):
         filters = {"link_id": link_id, "is_active": True, "available_links": { "$ne": 0 }}
 
         find_link = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters=filters,limit=1, offset=0)
-        print(find_link)
+        
         if find_link['success']:
             if find_link['data']:
                 redirect_url = find_link['data'][0]['link']

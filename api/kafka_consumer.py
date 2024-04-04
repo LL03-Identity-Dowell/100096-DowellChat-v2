@@ -8,7 +8,8 @@ from confluent_kafka import KafkaException
 from datetime import date
 from .utils import (
     DataCubeConnection, 
-    check_daily_collection
+    check_daily_collection,
+    map_product_to_db
     )
 from .views import sio
 
@@ -68,7 +69,7 @@ class ChatCreatedListener(threading.Thread):
                     
 
                     formatted_date = str(date.today()).replace("-", "_")
-                    db_name = f"{workspace_id}_{product}"
+                    db_name = map_product_to_db(workspace_id, api_key, product)
                     coll_name = f"{workspace_id}_{formatted_date}_{product}_collection"
 
                     

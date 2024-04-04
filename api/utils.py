@@ -231,7 +231,7 @@ def check_daily_collection(api_key, workspace_id, product):
 
     data_cube = DataCubeConnection()
 
-    db_name = f"{workspace_id}_{product}"
+    db_name = map_product_to_db(workspace_id, api_key, product)
     coll_name = f"{workspace_id}_{formatted_date}_{product}_collection"
 
     collection_response = data_cube.fetch_data(
@@ -476,4 +476,34 @@ def assign_database_to_product(workspace_id, api_key):
         print(count)
         next_db_index = count + 1
         return f"{workspace_id}_DB_TOPIC_{next_db_index}"
-    
+
+def map_product_to_db(workspace_id, api_key, product):
+    """
+    Map a product to its corresponding database name.
+
+    Args:
+        workspace_id (str): The workspace ID.
+        api_key (str): The API key for accessing data.
+        product (str): The name of the product.
+
+    Returns:
+        str: The database name corresponding to the product, or "Product not found" if the product is not found.
+    """
+    try:
+        check_topic = data_cube.fetch_data(
+            api_key=api_key,
+            db_name=f"{workspace_id}_CUSTOMER_SUPPORT_DB0",
+            coll_name=f"{workspace_id}_topics",
+            filters={"name": product.upper()},
+            limit=1,
+            offset=0
+        )
+
+        if check_topic.get('success', True) and check_topic.get('data'):
+            response = check_topic.get('data')
+            return response[0]["db_name"]
+        else:
+            return "Product not found"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
