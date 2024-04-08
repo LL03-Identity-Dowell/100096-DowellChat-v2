@@ -469,13 +469,13 @@ def assign_database_to_product(workspace_id, api_key):
     
     
     if check_topic.get('success', False) and not check_topic.get('data'):
-        return f"{workspace_id}_DB_TOPIC_1"
+        return f"{workspace_id}_db_topic_1"
     
     else:
         count = len(check_topic.get('data', []))
         print(count)
         next_db_index = count + 1
-        return f"{workspace_id}_DB_TOPIC_{next_db_index}"
+        return f"{workspace_id}_db_topic_{next_db_index}"
 
 def map_product_to_db(workspace_id, api_key, product):
     """
@@ -494,7 +494,7 @@ def map_product_to_db(workspace_id, api_key, product):
             api_key=api_key,
             db_name=f"{workspace_id}_CUSTOMER_SUPPORT_DB0",
             coll_name=f"{workspace_id}_topics",
-            filters={"name": product.upper()},
+            filters={"name": product.lower()},
             limit=1,
             offset=0
         )
