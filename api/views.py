@@ -1895,7 +1895,7 @@ def create_topic(sid, message):
                 "created_at": created_at, 
         }
         
-        db_name = f"{workspace_id}_customer_support_db0"
+        db_name = f"{workspace_id}_cs_ticketing_system_db0"
         coll_name = f"{workspace_id}_topics"
         topic_db = assign_database_to_product(workspace_id, api_key)
 
@@ -1936,7 +1936,7 @@ def get_all_topics(sid, message):
         api_key = message['api_key']
         
 
-        db_name = f"{workspace_id}_customer_support_db0"
+        db_name = f"{workspace_id}_cs_ticketing_system_db0"
         coll_name = f"{workspace_id}_topics"
 
         if not check_db(workspace_id, api_key, db_name):
@@ -1990,7 +1990,7 @@ def create_line_manager(sid, message):
                 "created_at": created_at, 
         }
         
-        db_name = f"{workspace_id}_customer_support_db0"
+        db_name = f"{workspace_id}_cs_ticketing_system_db0"
         coll_name = f"{workspace_id}_line_manager"
 
         
@@ -2027,7 +2027,7 @@ def get_all_line_managers(sid, message):
         api_key = message['api_key']
         
 
-        db_name = f"{workspace_id}_customer_support_db0"
+        db_name = f"{workspace_id}_cs_ticketing_system_db0"
         coll_name = f"{workspace_id}_line_manager"
 
         if not check_db(workspace_id, api_key, db_name):
@@ -2069,7 +2069,7 @@ def merge_line(sid, message):
         workspace_id = message['workspace_id']
         api_key = message['api_key']
         
-        db_name = f"{workspace_id}_customer_support_db0"
+        db_name = f"{workspace_id}_cs_ticketing_system_db0"
         coll_name = f"{workspace_id}_line_manager"
 
         line_manager_1_response = data_cube.fetch_data(
@@ -2165,7 +2165,7 @@ def split_line(sid, message):
         workspace_id = message['workspace_id']
         api_key = message['api_key']
 
-        db_name = f"{workspace_id}_customer_support_db0"
+        db_name = f"{workspace_id}_cs_ticketing_system_db0"
         coll_name = f"{workspace_id}_line_manager"
 
         # Fetch line manager data
@@ -2288,7 +2288,7 @@ def split_line(sid, message):
 #         }
         
 #         db_name = f"{workspace_id}_{product}"
-#         coll_name = f"{workspace_id}_customer_support_db0"
+#         coll_name = f"{workspace_id}_cs_ticketing_system_db0"
 
 #         if not check_db(workspace_id):
 #             return sio.emit('setting_response', {'data':"No DB found for the Workspace", 'status': 'failure', 'operation':'create_meta_settings'}, room=sid)
@@ -2397,9 +2397,9 @@ def create_ticket(sid, message):
         api_key = message['api_key']
         product = message['product'].lower()
         
-        line_manager = assign_ticket_to_line_manager(api_key, f"{workspace_id}_customer_support_db0", f"{workspace_id}_line_manager", {})
+        line_manager = assign_ticket_to_line_manager(api_key, f"{workspace_id}_cs_ticketing_system_db0", f"{workspace_id}_line_manager", {})
         
-        link_db_name = f"{workspace_id}_customer_support_db0"
+        link_db_name = f"{workspace_id}_cs_ticketing_system_db0"
         link_coll_name = f"{workspace_id}_master_link"
         
         link_response = data_cube.fetch_data(api_key=api_key, db_name=link_db_name, coll_name=link_coll_name,
@@ -2558,7 +2558,7 @@ def close_ticket(sid, message):
                 sio.emit('ticket_response', {'data': "Ticket Closed", 'status': 'success', 'operation': 'close_ticket'}, room=sid)
                 
                 # Update line manager's ticket count
-                line_manager_db_name = f"{workspace_id}_customer_support_db0"
+                line_manager_db_name = f"{workspace_id}_cs_ticketing_system_db0"
                 line_manager_coll_name = f"{workspace_id}_line_manager"
                 line_manager_data = data_cube.fetch_data(
                     api_key=api_key,
@@ -2628,7 +2628,7 @@ def reopen_ticket(sid, message):
                 sio.emit('ticket_response', {'data': "Ticket Reopened", 'status': 'success', 'operation': 'reopen_ticket'}, room=sid)
                 
                 # Update line manager's ticket count
-                line_manager_db_name = f"{workspace_id}_customer_support_db0"
+                line_manager_db_name = f"{workspace_id}_cs_ticketing_system_db0"
                 line_manager_coll_name = f"{workspace_id}_line_manager"
                 line_manager_data = data_cube.fetch_data(
                     api_key=api_key,
@@ -2702,7 +2702,7 @@ def generate_share_link(sid, message):
         }
 
 
-        db_name = f"{workspace_id}_customer_support_db0"
+        db_name = f"{workspace_id}_cs_ticketing_system_db0"
         coll_name = f"{workspace_id}_master_link"
   
         #Check if the DB0 Exists
@@ -2729,7 +2729,7 @@ def redirect_to_product_link(request):
         workspace_id = request.GET['workspace_id']
         api_key = request.GET['link_key']
 
-        db_name = f"{workspace_id}_customer_support_db0"
+        db_name = f"{workspace_id}_cs_ticketing_system_db0"
         coll_name = f"{workspace_id}_master_link"
         filters = {"link_id": link_id, "is_active": True, "available_links": { "$ne": 0 }}
 
@@ -2757,7 +2757,7 @@ def get_share_link_details(sid, message):
         workspace_id = message['workspace_id']
         api_key = message['api_key']
 
-        db_name = f"{workspace_id}_customer_support_db0"
+        db_name = f"{workspace_id}_cs_ticketing_system_db0"
         coll_name = f"{workspace_id}_master_link"
 
         
