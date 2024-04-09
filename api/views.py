@@ -2398,7 +2398,6 @@ def create_ticket(sid, message):
         product = message['product'].lower()
         
         line_manager = assign_ticket_to_line_manager(api_key, f"{workspace_id}_cs_ticketing_system_db0", f"{workspace_id}_line_manager", {})
-        
         link_db_name = f"{workspace_id}_cs_ticketing_system_db0"
         link_coll_name = f"{workspace_id}_master_link"
         
@@ -2434,13 +2433,11 @@ def create_ticket(sid, message):
 
         formatted_date = str(date.today()).replace("-", "_")
         db_name = map_product_to_db(workspace_id, api_key, product)
-        
         coll_name = f"{workspace_id}_{formatted_date}_{product}_collection"
 
         if check_daily_collection(api_key, workspace_id, product):
                             
             response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
-            
             if response['success'] == True:
                 sio.enter_room(sid, response['data']['inserted_id'])
                 new_ticket_data ={

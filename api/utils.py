@@ -363,7 +363,7 @@ def assign_ticket_to_line_manager(api_key, db_name, coll_name, filters, limit=19
 def calculate_position_in_line(api_key, workspace_id):
     try:
         # Retrieve line managers
-        line_manager_db_name = f"{workspace_id}_CUSTOMER_SUPPORT_DB0"
+        line_manager_db_name = f"{workspace_id}_cs_ticketing_system_db0"
         line_manager_coll_name = f"{workspace_id}_line_manager"
         line_managers_data = data_cube.fetch_data(
             api_key=api_key,
@@ -461,7 +461,7 @@ def is_valid_email(email):
 def assign_database_to_product(workspace_id, api_key):
     check_topic = data_cube.fetch_data(
         api_key=api_key, 
-        db_name=f"{workspace_id}_CUSTOMER_SUPPORT_DB0", 
+        db_name=f"{workspace_id}_cs_ticketing_system_db0", 
         coll_name=f"{workspace_id}_topics", 
         filters={},
         limit=200, 
@@ -492,7 +492,7 @@ def map_product_to_db(workspace_id, api_key, product):
     try:
         check_topic = data_cube.fetch_data(
             api_key=api_key,
-            db_name=f"{workspace_id}_CUSTOMER_SUPPORT_DB0",
+            db_name=f"{workspace_id}_cs_ticketing_system_db0",
             coll_name=f"{workspace_id}_topics",
             filters={"name": product.lower()},
             limit=1,
