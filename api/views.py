@@ -2415,8 +2415,6 @@ def create_ticket(sid, message):
                else:
                    return sio.emit('ticket_response', {'data':"Can't create Room due to no public username in the link_id", 'status': 'failure', 'operation':'create_ticket'}, room=sid)
                    
-
-        
         
         data = {
                     "document_type": "ticket",
@@ -2455,6 +2453,13 @@ def create_ticket(sid, message):
                 
                 sio.emit('ticket_response', {'data': new_ticket_data, 'status': 'success', 'operation': 'create_ticket'}, room=sid)
 
+                """SENDING OF EMAIL"""
+                formatted_email = EMAIL_FROM_WEBSITE.format(response['data']['inserted_id'], response['data']['inserted_id'])
+                if is_valid_email(email):
+                    send_email(email, email, "New Ticket Confirmation", formatted_email)
+                else:
+                    print("Email is invalid")
+
                 #Update the Master Link
                 new_available_link = link_response['data'][0]['available_links'] 
                 new_available_link -=1
@@ -2481,15 +2486,6 @@ def create_ticket(sid, message):
                             "is_active": is_active,
                         }
                     )
-
-                """SENDING OF EMAIL"""
-
-                formatted_email = EMAIL_FROM_WEBSITE.format(response['data']['inserted_id'], response['data']['inserted_id'])
-                if is_valid_email(email):
-                    send_email(email, email, "New Ticket Confirmation", formatted_email)
-                else:
-                    print("Email is invalid")
-
 
                 return
                 
