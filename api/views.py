@@ -2265,44 +2265,56 @@ def split_line(sid, message):
         error_message = str(e)
         return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation': 'split_line'}, room=sid)
 
-# @sio.event
-# def create_meta_settings(sid, message):
-#     try:
-#         workspace_id = message['workspace_id']
-#         api_key = message['api_key']
-#         product = message['product']
-
-#         topics = message ['topics']
-#         waiting_time = message['waiting_time']
-#         operation_time = message['operation_time']
-#         line_manager = message['line_manager']
-#         created_at = message['created_at']
+@sio.event
+def create_meta_setting(sid, message):
+    try:
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        waiting_time = message['waiting_time']
+        operation_time = message['operation_time']
+        created_at = message['created_at']
         
-#         data = {
-#                 "topics": topics,
-#                 "waiting_time": waiting_time,
-#                 "operation_time": operation_time,
-#                 "line_manager": line_manager,
-#                 "workspace_id":workspace_id,
-#                 "created_at": created_at, 
-#         }
+        data = {
+                "waiting_time": waiting_time,
+                "operation_time": operation_time,
+                "created_at": created_at, 
+        }
         
-#         db_name = f"{workspace_id}_{product}"
-#         coll_name = f"{workspace_id}_cs_ticketing_system_db0"
+        db_name = f"{workspace_id}_cs_ticketing_system_db0"
+        coll_name = f"{workspace_id}_setting"
 
-#         if not check_db(workspace_id):
-#             return sio.emit('setting_response', {'data':"No DB found for the Workspace", 'status': 'failure', 'operation':'create_meta_settings'}, room=sid)
-#         if check_collection(workspace_id, "server"):
-#             response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
+        if not check_db(workspace_id, api_key, db_name):
+            return sio.emit('setting_response', {'data':"No DB found for the Workspace", 'status': 'failure', 'operation':'create_meta_setting'}, room=sid)
+        
+        if check_collection(api_key, workspace_id, coll_name, db_name):
+            check_setting = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={},limit=1, offset=0)
+            if check_setting['success']:
+                print(check_setting)
+                if check_setting['data']:
+                    update_setting = data_cube.update_data(
+                        api_key=api_key,
+                        db_name=db_name, 
+                        coll_name=coll_name,
+                        query={'_id': check_setting['data'][0]['_id']},
+                        update_data={
+                            "waiting_time": waiting_time,
+                            "operation_time": operation_time,
+                        }
+                    )
 
-#             if response['success'] == True:
-#                 return sio.emit('setting_response', {'data':response['data'], 'status': 'success', 'operation':'create_meta_settings'}, room=sid)
-#             else:
-#                 return sio.emit('setting_response', {'data':response['message'], 'status': 'failure', 'operation':'create_meta_settings'}, room=sid)
-#     except Exception as e:
-#         # Handle other exceptions
-#         error_message = str(e)
-#         return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation':'create_meta_settings'}, room=sid)
+                    if update_setting['success'] == True:
+                        return sio.emit('setting_response', {'data':update_setting['data'], 'status': 'success', 'operation':'create_meta_settings'}, room=sid)
+
+            response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
+
+            if response['success'] == True:
+                return sio.emit('setting_response', {'data':response['data'], 'status': 'success', 'operation':'create_meta_settings'}, room=sid)
+            else:
+                return sio.emit('setting_response', {'data':response['message'], 'status': 'failure', 'operation':'create_meta_settings'}, room=sid)
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation':'create_meta_settings'}, room=sid)
 
 """ TICKET CHAT STARTS HERE"""
 @sio.event
