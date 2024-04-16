@@ -2316,6 +2316,48 @@ def create_meta_setting(sid, message):
         error_message = str(e)
         return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation':'create_meta_settings'}, room=sid)
 
+
+@sio.event
+def get_meta_setting(sid, message):
+    try:
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        
+
+        db_name = f"{workspace_id}_cs_ticketing_system_db0"
+        coll_name = f"{workspace_id}_setting"
+
+        if not check_db(workspace_id, api_key, db_name):
+            return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'get_meta_setting'}, room=sid)
+
+        if check_collection(api_key, workspace_id, coll_name, db_name):
+
+            response = data_cube.fetch_data(
+                api_key=api_key,
+                db_name=db_name,
+                coll_name=coll_name,
+                filters={},
+                limit=199,
+                offset=0
+            )
+        
+            if response['success']:
+                sio.enter_room(sid, workspace_id)
+                if not response['data']:
+                    return sio.emit('setting_response', {'data': 'No Meta Setting found for this Workspace', 'status': 'failure', 'operation': 'get_meta_setting'}, room=sid)
+
+                else:
+                    return sio.emit('setting_response', {'data': response['data'], 'status': 'success', 'operation': 'get_meta_setting'}, room=sid)
+            else:
+                # Error in fetching data
+                return sio.emit('setting_response', {'data': response['message'], 'status': 'failure', 'operation': 'get_meta_setting'}, room=sid)
+
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation': 'get_meta_setting'}, room=sid)
+
+
 """ TICKET CHAT STARTS HERE"""
 @sio.event
 def ticket_message_event(sid, message):
