@@ -2579,6 +2579,44 @@ def get_tickets(sid, message):
         return sio.emit('ticket_response', {'data': error_message, 'status': 'failure', 'operation':'get_ticket'}, room=sid)
 
 @sio.event
+def get_tickets_by_date(sid, message):
+    try:
+        line_manager = message['line_manager']
+        ticket_date = message["ticket_date"]
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        db_name =map_product_to_db(workspace_id, api_key, product)
+        
+        coll_name = f"{workspace_id}_{ticket_date}_{product}_collection"
+        ticket_filters = {"document_type": "ticket", "line_manager":line_manager}
+        
+        tickets = data_cube.fetch_data(api_key=api_key, 
+                                       db_name=db_name, 
+                                       coll_name=coll_name,
+                                       filters=ticket_filters,
+                                       limit=100,
+                                       offset=0
+                                       )
+
+       
+        if tickets['success']:
+            if not tickets['data']:
+                sio.emit('ticket_response', {'data': [], 'status': 'success', 'operation': 'get_tickets_by_date'}, room=sid)    
+            else:
+                sio.emit('ticket_response', {'data': tickets['data'], 'status': 'success', 'operation': 'get_tickets_by_date'}, room=sid)
+             
+        else:
+            sio.emit('ticket_response', {'message': tickets['message'], 'status': 'false', 'operation': 'get_tickets_by_date'}, room=sid)    
+        return
+
+    except Exception as e:
+        # Handle other exceptions
+        error_message = str(e)
+        return sio.emit('ticket_response', {'data': error_message, 'status': 'failure', 'operation':'get_tickets_by_date'}, room=sid)
+
+@sio.event
 def close_ticket(sid, message):
     try:
         ticket_id = message['ticket_id']
