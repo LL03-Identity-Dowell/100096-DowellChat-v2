@@ -507,3 +507,34 @@ def map_product_to_db(workspace_id, api_key, product):
     except Exception as e:
         return f"Error: {str(e)}"
 
+
+def get_unread_messages_for_line_manager(api_key, db_name, line_manager, coll_name):
+    ticket_filters = {"document_type": "ticket", "line_manager": line_manager, "is_closed":False}
+    tickets_response = data_cube.fetch_data(api_key=api_key, 
+                                            db_name=db_name, 
+                                            coll_name=coll_name,
+                                            filters=ticket_filters,
+                                            limit=100,
+                                            offset=0)
+    
+    tickets = tickets_response.get('data', [])
+    
+    unread_messages = []
+    unread_count = 0
+
+    if tickets:
+        for ticket in tickets:
+            ticket_id = ticket["_id"]
+            message_filters = {"document_type": "chat", "ticket_id": ticket_id, "is_read": False}
+            messages_response = data_cube.fetch_data(api_key=api_key, 
+                                                    db_name=db_name, 
+                                                    coll_name=coll_name,
+                                                    filters=message_filters,
+                                                    limit=100,
+                                                    offset=0)
+            
+            messages = messages_response.get('data', [])
+            unread_messages.extend(messages)
+            unread_count += len(messages)
+            
+    return unread_messages, unread_count

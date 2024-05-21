@@ -2439,6 +2439,36 @@ def get_ticket_messages(sid, message):
         error_message = str(e)
         return sio.emit('ticket_message_response', {'data': error_message, 'status': 'failure', 'operation':'get_ticket_messages'}, room=sid)
 
+@sio.event
+def get_unread_messages(sid, message):
+    try:
+        line_manager = message['line_manager']
+        ticket_date = message["ticket_date"]
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        product = message['product']
+
+        
+        db_name =map_product_to_db(workspace_id, api_key, product)
+        
+        coll_name = f"{workspace_id}_{ticket_date}_{product}_collection"
+        
+        unread_messages, unread_count = get_unread_messages_for_line_manager(api_key, db_name, line_manager, coll_name)
+        
+        response = {
+            'data': {
+                'unread_messages': unread_messages,
+                'unread_messages_count': unread_count,
+            },
+            'status': 'success',
+            'operation': 'get_unread_messages'
+        }
+        
+        sio.emit('ticket_message_response', response, room=sid)
+    
+    except Exception as e:
+        error_message = str(e)
+        sio.emit('ticket_message_response', {'data': error_message, 'status': 'failure', 'operation': 'get_unread_messages'}, room=sid)
 
 @sio.event
 def create_ticket(sid, message):
