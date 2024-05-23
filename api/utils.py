@@ -184,11 +184,9 @@ def get_room_details(workspace_id, api_key, product, category_id):
     category ID.
 
     :param workspace_id: Workspace ID is a unique identifier for a specific workspace or environment
-    where the data is stored or accessed. It helps in distinguishing different workspaces within a
-    system
+    where the data is stored or accessed. 
     :param api_key: An API key is a unique identifier used to authenticate a user, developer, or calling
-    program to an API (Application Programming Interface). It is typically a long string of alphanumeric
-    characters that grants access to specific resources or services
+    program to an API (Application Programming Interface). 
     :param product: Product is a variable that represents the type of product or service related to the
     room details being fetched
     :param category_id: Category ID is the identifier for a specific category within the workspace. It
@@ -307,6 +305,59 @@ def fetch_data_from_collections(api_key, db_name, collections, filters, limit=50
     return data
 
 
+# def assign_ticket_to_line_manager(api_key, db_name, coll_name, filters, limit=199, offset=0):
+#     """
+#     Assign a ticket to a line manager based on round-robin algorithm and specific conditions.
+
+#     :param api_key: The API key for authentication.
+#     :param db_name: The name of the database.
+#     :param coll_name: The name of the collection containing line manager data.
+#     :param filters: Filters to apply while retrieving line manager data.
+#     :param limit: Maximum number of line managers to retrieve (default is 199).
+#     :param offset: Offset for pagination (default is 0).
+#     :return: The user_id of the assigned line manager or None if no line manager available.
+#     """
+#     response = data_cube.fetch_data(
+#         api_key=api_key,
+#         db_name=db_name,
+#         coll_name=coll_name,
+#         filters=filters,
+#         limit=limit,
+#         offset=offset
+#     )
+
+#     line_managers = response['data']
+#     line_managers.sort(key=lambda x: (
+#         x['ticket_count'], x['positions_in_a_line']))
+
+#     for line_manager in line_managers:
+#         if line_manager['ticket_count'] == 0:
+#             line_manager['ticket_count'] += 1
+#             data_cube.update_data(
+#                 api_key=api_key,
+#                 db_name=db_name,
+#                 coll_name=coll_name,
+#                 query={'_id': line_manager['_id']},
+#                 update_data={'ticket_count': line_manager['ticket_count']}
+#             )
+#             return line_manager['user_id']
+
+#     # If all line managers have ongoing tickets, assign to the one with the lowest ticket_count and positions_in_a_line
+#     if line_managers:
+#         line_manager = line_managers[0]
+#         line_manager['ticket_count'] += 1
+#         data_cube.update_data(
+#             api_key=api_key,
+#             db_name=db_name,
+#             coll_name=coll_name,
+#             query={'_id': line_manager['_id']},
+#             update_data={'ticket_count': line_manager['ticket_count']}
+#         )
+#         return line_manager['user_id']
+#     else:
+#         return None
+
+
 def assign_ticket_to_line_manager(api_key, db_name, coll_name, filters, limit=199, offset=0):
     """
     Assign a ticket to a line manager based on round-robin algorithm and specific conditions.
@@ -329,35 +380,20 @@ def assign_ticket_to_line_manager(api_key, db_name, coll_name, filters, limit=19
     )
 
     line_managers = response['data']
-    line_managers.sort(key=lambda x: (
-        x['ticket_count'], x['positions_in_a_line']))
-
-    for line_manager in line_managers:
-        if line_manager['ticket_count'] == 0:
-            line_manager['ticket_count'] += 1
-            data_cube.update_data(
-                api_key=api_key,
-                db_name=db_name,
-                coll_name=coll_name,
-                query={'_id': line_manager['_id']},
-                update_data={'ticket_count': line_manager['ticket_count']}
-            )
-            return line_manager['user_id']
-
-    # If all line managers have ongoing tickets, assign to the one with the lowest ticket_count and positions_in_a_line
-    if line_managers:
-        line_manager = line_managers[0]
-        line_manager['ticket_count'] += 1
-        data_cube.update_data(
-            api_key=api_key,
-            db_name=db_name,
-            coll_name=coll_name,
-            query={'_id': line_manager['_id']},
-            update_data={'ticket_count': line_manager['ticket_count']}
-        )
-        return line_manager['user_id']
-    else:
+    
+    if not line_managers:
         return None
+    
+    line_managers.sort(key=lambda x: (x['ticket_count'], x['positions_in_a_line']))
+    
+    min_ticket_count = line_managers[0]['ticket_count']
+    candidates = [lm for lm in line_managers if lm['ticket_count'] == min_ticket_count]
+    
+    candidates.sort(key=lambda x: x['positions_in_a_line'])
+    
+    assigned_line_manager = candidates[0]
+
+    return assigned_line_manager['user_id']
 
 
 def calculate_position_in_line(api_key, workspace_id):
@@ -536,5 +572,33 @@ def get_unread_messages_for_line_manager(api_key, db_name, line_manager, coll_na
             messages = messages_response.get('data', [])
             unread_messages.extend(messages)
             unread_count += len(messages)
-            
+
     return unread_messages, unread_count
+
+
+def update_line_manager_ticket_count(api_key, workspace_id, line_manager):
+    try:
+        # Fetch line manager data
+        line_manager_data = data_cube.fetch_data(
+            api_key=api_key,
+            db_name=f"{workspace_id}_cs_ticketing_system_db0",
+            coll_name=f"{workspace_id}_line_manager",
+            filters={"user_id": line_manager},
+            limit=1,
+            offset=0
+        )
+        
+        if line_manager_data['success'] and line_manager_data['data']:
+            line_manager = line_manager_data['data'][0]
+            line_manager['ticket_count'] += 1
+
+            response = data_cube.update_data(
+                api_key=api_key,
+                db_name=f"{workspace_id}_cs_ticketing_system_db0",
+                coll_name=f"{workspace_id}_line_manager",
+                query={'_id': line_manager['_id']},
+                update_data={'ticket_count': line_manager['ticket_count']}
+            )
+
+    except Exception as e:
+        print(f"Error updating line manager ticket count: {e}")
