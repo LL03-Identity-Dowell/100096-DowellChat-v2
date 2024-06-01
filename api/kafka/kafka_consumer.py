@@ -6,12 +6,12 @@ from confluent_kafka import Consumer
 from confluent_kafka import KafkaError
 from confluent_kafka import KafkaException
 from datetime import date
-from .utils import (
+from api.utils import (
     DataCubeConnection, 
     check_daily_collection,
     map_product_to_db
     )
-from .views import sio
+from api.views import sio
 
 #We want to run thread in an infinite loop
 running=True

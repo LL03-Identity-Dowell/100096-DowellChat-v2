@@ -15,7 +15,7 @@ import base64
 from datetime import date
 from django.conf import settings
 
-from .kafka_producer import ProducerTicketChat
+from kafka.kafka_producer import ProducerTicketChat
 import random
 import re
 
