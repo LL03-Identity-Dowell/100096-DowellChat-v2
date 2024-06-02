@@ -6,6 +6,7 @@ from .models import Message
 from rest_framework.decorators import api_view
 from django.views.decorators.csrf import csrf_exempt
 from .serializers import MessageSerializer
+from api.connector.database_connector import DataCubeConnection
 from .utils import *
 import os
 import json
@@ -15,7 +16,8 @@ import base64
 from datetime import date
 from django.conf import settings
 
-from kafka.kafka_producer import ProducerTicketChat
+
+from api.kafka.kafka_producer import ProducerTicketChat
 import random
 import re
 
