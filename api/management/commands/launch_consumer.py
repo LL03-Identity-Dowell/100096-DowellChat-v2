@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from api.kafka_consumer import ChatCreatedListener
+from api.kafka.kafka_consumer import ChatCreatedListener
 class Command(BaseCommand):
     help = 'Launches Listener for ticket chat message : Kafka'
     def handle(self, *args, **options):

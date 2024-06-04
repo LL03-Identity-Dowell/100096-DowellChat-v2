@@ -2,6 +2,7 @@ from enum import Enum
 import requests
 import json
 
+
 class DBCrudOperation(Enum):
     FETCH = "fetch"
     INSERT = "insert"
@@ -16,7 +17,6 @@ class DataCubeConnection:
     BASE_URL = "https://datacube.uxlivinglab.online/db_api/"
     CRUD_URL = BASE_URL + "crud/"
     GET_DATA_URL = BASE_URL + "get_data/"
-
 
     def _make_request(self, operation, payload):
         url = self.GET_DATA_URL if operation == DBCrudOperation.FETCH else self.CRUD_URL

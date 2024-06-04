@@ -1,25 +1,25 @@
+import re
+import random
+from api.kafka.kafka_producer import ProducerTicketChat
+from django.conf import settings
+from datetime import date
+import base64
+import socketio
+from django.http import HttpResponse
+import json
+import os
+from .helper import *
+from api.utils.email.email_template import EMAIL_FROM_WEBSITE
+from api.utils.email.email_sender import send_email, is_valid_email
+from api.connector.database_connector import DataCubeConnection
+from .serializers import MessageSerializer
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
+from .models import Message
+import requests
+from django.shortcuts import redirect, render
 async_mode = 'gevent'
 # async_mode = "threading"
-from django.shortcuts import redirect, render
-import requests
-from .models import Message
-from rest_framework.decorators import api_view
-from django.views.decorators.csrf import csrf_exempt
-from .serializers import MessageSerializer
-from api.connector.database_connector import DataCubeConnection
-from .utils import *
-import os
-import json
-from django.http import HttpResponse
-import socketio
-import base64
-from datetime import date
-from django.conf import settings
-
-
-from api.kafka.kafka_producer import ProducerTicketChat
-import random
-import re
 
 
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
