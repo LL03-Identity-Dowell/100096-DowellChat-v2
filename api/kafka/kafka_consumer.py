@@ -6,10 +6,7 @@ from confluent_kafka import Consumer
 from confluent_kafka import KafkaError
 from confluent_kafka import KafkaException
 from datetime import date
-from api.helper import (
-    check_daily_collection,
-    map_product_to_db
-)
+from api.utils.datacube_utils import check_daily_collection, map_product_to_db
 from api.views import sio
 from api.connector.database_connector import DataCubeConnection
 
