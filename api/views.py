@@ -2390,6 +2390,16 @@ def ticket_message_event(sid, message):
 
         sio.enter_room(sid, ticket_id)
         sio.emit('ticket_message_response', {'data':data, 'status': 'success', 'operation':'send_message'}, room=ticket_id)
+        response = {
+            'data': {
+                'unread_messages': data,
+                'unread_messages_count': 1,
+            },
+            'status': 'success',
+            'operation': 'get_unread_messages'
+        }
+        
+        sio.emit('ticket_message_response', response, room=workspace_id)
         producerTicketChat.publish(data)
 
     except Exception as e:
