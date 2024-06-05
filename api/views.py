@@ -30,9 +30,7 @@ sio.instrument(auth={
 app = socketio.WSGIApp(sio)
 thread = None
 
-my_api_key = os.getenv("API_KEY")
-if my_api_key is None:
-    raise ValueError("API_KEY is missing. Make sure it is set in the .env file.")
+
 data_cube = DataCubeConnection()
 
 @api_view(['GET'])
@@ -856,7 +854,7 @@ def join_channel_chat(sid, message):
                     update_data = {
                         'is_read': True, 
                     }
-                    mark_read = data_cube.update_data(api_key=my_api_key, db_name=db_name, coll_name=f"{workspace_id}_channel_chat", query={"channel_id": channel_id}, update_data=update_data)
+                    mark_read = data_cube.update_data(api_key=api_key, db_name=db_name, coll_name=f"{workspace_id}_channel_chat", query={"channel_id": channel_id}, update_data=update_data)
                 else:
                     sio.emit('channel_chat_response', {'data': [], 'status': 'success', 'operation': 'join_channel_chat'}, room=sid)    
                 return
@@ -1398,7 +1396,7 @@ def public_join_room(sid, message):
                     update_data = {
                         'is_read': True, 
                     }
-                    mark_read = data_cube.update_data(api_key=my_api_key, db_name=db_name, coll_name=f"{workspace_id}_public_chat", query={"room_id": room}, update_data=update_data)
+                    mark_read = data_cube.update_data(api_key=api_key, db_name=db_name, coll_name=f"{workspace_id}_public_chat", query={"room_id": room}, update_data=update_data)
                     print(mark_read)
                 else:
                     sio.emit('public_message_response', {'data': [], 'status': 'success', 'operation': 'join_public_room'}, room=sid)    
@@ -1611,7 +1609,7 @@ def get_used_usernames(sid, message):
         coll_name = f"{workspace_id}_master_link"
 
         check_collection(api_key, workspace_id, "master_link")
-        response = data_cube.fetch_data(api_key=my_api_key,db_name=db_name, coll_name=coll_name, filters={"workspace_id": workspace_id}, limit=1, offset=0)
+        response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"workspace_id": workspace_id}, limit=1, offset=0)
         if response['success']:
             return sio.emit('master_link_response', {'data': response['data'], 'status': 'success', 'operation': 'get_used_usernames'}, room=sid)
 
@@ -1635,7 +1633,7 @@ def create_master_link(sid, message):
         
 
         check_collection(api_key, company_id, "master_link")
-        coll_response = data_cube.fetch_data(api_key=my_api_key,db_name=db_name, coll_name=coll_name, filters={"workspace_id": company_id}, limit=1, offset=0)
+        coll_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"workspace_id": company_id}, limit=1, offset=0)
         if coll_response['success']:
             if not coll_response['data']:
                 is_First = True
@@ -1663,7 +1661,7 @@ def create_master_link(sid, message):
                     "workspace_id": company_id,
                     "public_username": get_link_usernames(links),  # Corrected variable name
                 }
-                add_response = data_cube.insert_data(api_key=my_api_key, db_name=db_name, coll_name=coll_name, data=data)
+                add_response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
                 print(add_response)
             else:
                 update_data = {
@@ -1671,7 +1669,7 @@ def create_master_link(sid, message):
                     "public_username": used_links + new_links,
                 }
 
-                add_response = data_cube.update_data(api_key=my_api_key, db_name=db_name, coll_name=coll_name, query={"workspace_id": company_id}, update_data=update_data)
+                add_response = data_cube.update_data(api_key=api_key, db_name=db_name, coll_name=coll_name, query={"workspace_id": company_id}, update_data=update_data)
                 print(add_response)
 
             return
@@ -2430,7 +2428,7 @@ def get_ticket_messages(sid, message):
                         'is_read': True, 
                     }
                     for coll_name in collections:
-                        mark_read = data_cube.update_data(api_key=my_api_key, db_name=db_name, coll_name=coll_name, query={"document_type":"ticket", "ticket_id":ticket}, update_data=update_data)
+                        mark_read = data_cube.update_data(api_key=api_key, db_name=db_name, coll_name=coll_name, query={"document_type":"ticket", "ticket_id":ticket}, update_data=update_data)
                     
                 else:
                     sio.emit('ticket_message_response', {'data': [], 'status': 'success', 'operation': 'get_ticket_messages'}, room=sid)    
@@ -2594,7 +2592,7 @@ def create_ticket(sid, message):
         product = message['product'].lower()
         
         # Assign the ticket to a line manager
-        line_manager = assign_ticket_to_line_manager(api_key, f"{workspace_id}_cs_ticketing_system_db0", f"{workspace_id}_line_manager", {})
+        line_manager, line_manager_ticket_count = assign_ticket_to_line_manager(api_key, f"{workspace_id}_cs_ticketing_system_db0", f"{workspace_id}_line_manager", {})
         if not line_manager:
             return sio.emit('ticket_response', {'data': "No available line manager", 'status': 'failure', 'operation': 'create_ticket'}, room=sid)
 
@@ -2613,7 +2611,16 @@ def create_ticket(sid, message):
 
         user_id = random.choice(usernames)
 
-        # Prepare ticket data
+        #Get the waiting time
+        waiting_time_db_name = f"{workspace_id}_cs_ticketing_system_db0"
+        waiting_time_coll_name = f"{workspace_id}_setting"
+        waiting_time_response = data_cube.fetch_data(api_key=api_key,db_name=waiting_time_db_name,coll_name=waiting_time_coll_name,filters={},limit=1, offset=0)
+
+        waiting_time = int(waiting_time_response['data'][0]['waiting_time'])
+        new_ticket_waiting_time = waiting_time * int(line_manager_ticket_count)
+        new_waiting_time_response = {"waiting_time":new_ticket_waiting_time}
+        
+        #Prepare ticket data
         data = {
             "document_type": "ticket",
             "user_id": user_id,
@@ -2650,9 +2657,10 @@ def create_ticket(sid, message):
             "product": product,
         }
 
-        sio.emit('new_ticket', {'data': new_ticket_data, 'status': 'success'}, room=workspace_id)
         sio.emit('ticket_response', {'data': new_ticket_data, 'status': 'success', 'operation': 'create_ticket'}, room=sid)
-
+        sio.emit('waiting_time_response', {'data': new_waiting_time_response, 'status': 'success', 'operation': 'create_ticket'}, room=sid)
+        sio.emit('new_ticket', {'data': new_ticket_data, 'status': 'success'}, room=workspace_id)
+        
         # Send email
         formatted_email = EMAIL_FROM_WEBSITE.format(inserted_id, inserted_id)
         if is_valid_email(email):

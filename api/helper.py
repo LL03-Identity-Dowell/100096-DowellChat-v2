@@ -321,7 +321,7 @@ def assign_ticket_to_line_manager(api_key, db_name, coll_name, filters, limit=19
     
     assigned_line_manager = candidates[0]
 
-    return assigned_line_manager['user_id']
+    return assigned_line_manager['user_id'], assigned_line_manager['ticket_count']
 
 
 def calculate_position_in_line(api_key, workspace_id):
