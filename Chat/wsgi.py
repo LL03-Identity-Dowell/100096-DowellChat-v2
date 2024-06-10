@@ -41,7 +41,7 @@ from django.core.wsgi import get_wsgi_application
 # Get the Django WSGI application
 django_app = get_wsgi_application()
 
-from api.views import sio
+from websocket.views import sio
 
 application = socketio.WSGIApp(sio, django_app)
 from gevent import pywsgi
