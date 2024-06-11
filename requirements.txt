@@ -17,3 +17,4 @@ requests
 
 confluent-kafka
 pika
+drf-yasg==1.21.7 
