@@ -1,3 +1,4 @@
+import random
 from django.conf import settings
 from django.http import HttpResponse
 from api.connector.database_connector import DataCubeConnection
@@ -10,9 +11,18 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import redirect, render
 from rest_framework import status
-
 from drf_yasg.utils import swagger_auto_schema
 from api.utils.swagger_docs import get_master_link_docs
+from .serializers import MasterLinkSerializer
+
+from api.utils.datacube_utils import (
+    check_daily_collection, 
+    check_collection, 
+    get_database_collections,
+    create_cs_db_meta,
+    check_db,
+    map_product_to_db,
+)
 
 data_cube = DataCubeConnection()
 
@@ -104,6 +114,66 @@ class Masterlink(APIView):
             return Response({
                 "success": True, "message": "All master links", "response": response.get('data', []),
             })
+
+        except Exception as e:
+            return Response(
+                {"message": str(e), "success": False}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def post(self, request):
+        try:            
+            serializer = MasterLinkSerializer(data=request.data)
+            if serializer.is_valid():
+                workspace_id = serializer.validated_data['workspace_id']
+                api_key = serializer.validated_data['api_key']
+                url = "https://www.dowellchat.uxlivinglab.online/"
+                link_id = ''.join([str(random.randint(0, 9)) for _ in range(20)])
+                link = f"{url}?workspace_id={workspace_id}&link_id={link_id}"
+                master_link = f"https://www.dowellchat.uxlivinglab.online/api/share/?link_id={link_id}&workspace_id={workspace_id}&link_key={api_key}"
+                
+                
+                data = {
+                    "link_id":link_id,
+                    "number_of_links": serializer.validated_data['number_of_links'],
+                    "available_links": serializer.validated_data['number_of_links'],
+                    "product_distribution": serializer.validated_data['product_distribution'],
+                    "link": link,
+                    "usernames": serializer.validated_data['usernames'],
+                    "is_active": True,
+                    "master_link": master_link,
+                    "created_at": serializer.validated_data['created_at'],
+                }
+
+                db_name = f"{workspace_id}_cs_ticketing_system_db0"
+                coll_name = f"{workspace_id}_master_link"
+
+                if check_collection(api_key, workspace_id, coll_name, db_name):            
+                    response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
+
+                    if response['success'] == True:
+                        return Response(
+                            {
+                                "success": True,
+                                "message": "Masterlink generated successfully",
+                                "data": master_link,
+                            },
+                            status=status.HTTP_201_CREATED
+                        )
+                        
+                    else:
+                        return Response(
+                            {
+                                "success": False,
+                                "message": response['message'],
+                                "data": [],
+                            },
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+            else:
+                return Response(
+                    {"success": False, "message": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST
+            )
 
         except Exception as e:
             return Response(

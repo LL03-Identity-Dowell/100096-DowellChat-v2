@@ -1,10 +1,10 @@
 from rest_framework import serializers
 
 
-class MessageSerializer(serializers.Serializer):
-    type = serializers.CharField(allow_null=False, allow_blank=False) 
-    room_id = serializers.CharField(allow_null=False, allow_blank=False)
-    message_data = serializers.CharField(allow_null=False, allow_blank=False)
-    side = serializers.CharField(allow_null=False, allow_blank=False)
-    author = serializers.CharField(allow_null=False, allow_blank=False)
-    message_type = serializers.CharField(allow_null=False, allow_blank=False)
+class MasterLinkSerializer(serializers.Serializer):
+    number_of_links = serializers.IntegerField()
+    product_distribution = serializers.JSONField()
+    usernames = serializers.ListField()
+    workspace_id = serializers.CharField(allow_null=True, allow_blank=True) 
+    api_key = serializers.CharField(allow_null=False, allow_blank=False)
+    created_at = serializers.CharField(allow_null=False, allow_blank=False)
