@@ -314,3 +314,93 @@ socket.on('ticket_response', (data) => {
     console.log(data);
 });
 ```
+
+
+## API DOCUMENTATION FOR THE TICKETING SYSTEM V1
+### Masterlink Endpoints
+#### 1. Retrieve All Master Links
+
+**Endpoint:** `GET /api/masterlink//?workspace_id=<workspace_id>&api_key=<datacube-api-key>&limit=10&offset=0`
+
+**Description:** Returns all master links.
+
+**Query Parameters:**
+- `workspace_id` (required): Workspace ID of the workspace to retrieve
+- `api_key` (required): Datacube API Key
+- `limit` (optional): Number of items to return, default is 10
+- `offset` (optional): For pagination, default is 0
+
+**Example Request:**
+```bash
+curl  -X GET \
+  'https://www.dowellchat.uxlivinglab.online/api/masterlink/?workspace_id=<workspace_id>&api_key=<datacube-api-key>&limit=10&offset=0'
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "message": "All master links",
+  "response": [
+    {
+      "_id": "6613e22394fdbaf2211863aa",
+      "link_id": "35108145511281803554",
+      "number_of_links": "3",
+      "available_links": "3",
+      "product_distribution": {
+        "test_product": "3"
+      },
+      "link": "https://www.dowellchat.uxlivinglab.online/?workspace_id=63cf89a0dcc2a171957b290b&link_id=35108145511281803554",
+      "usernames": [
+        "Zt2RsCLqkLkT",
+        "KPm4FuffAJVs",
+        "H2cvEO9kYfKA"
+      ],
+      "is_active": true,
+      "master_link": "https://www.dowellchat.uxlivinglab.online/api/share/?link_id=35108145511281803554&workspace_id=63cf89a0dcc2a171957b290b&link_key=54646273-2933-4501-9b96-04081ae2218d",
+      "created_at": "2024-04-08T12:25:05.384Z"
+    }
+  ]
+}
+```
+
+
+#### 2. Generate a new Master Link
+
+**Endpoint:** `POST /api/masterlink/`
+
+**Description:** Creates a new Workspace.
+
+**Parameters:**
+- `number_of_links` (required): Numbers of Link you want to generate
+- `product_distribution` (required): Distribution of link across topics
+- `usernames` (required): Usernames for the link
+- `workspace_id` (required): Workspace ID of the workspace to retrieve
+- `api_key` (required): Datacube API Key
+- `created_at` (required): Timestamp of the creation
+
+**Example Request:**
+```bash
+curl  -X POST \
+  'https://www.dowellchat.uxlivinglab.online/api/masterlink/' \
+  --data-raw '{
+  "number_of_links":2,
+  "product_distribution":
+    {
+        "test_product": 2
+    },
+  "usernames": ["pOiUtReWsD", "dFgHjKlMnO"],
+  "workspace_id": "<workspace_id>",
+  "api_key": "<datacube-api-key>",
+  "created_at": "2024-06-12T05:23:11.547Z"
+}'
+```
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "message": "Masterlink generated successfully",
+  "data": "https://www.dowellchat.uxlivinglab.online/api/share/?link_id=67172742949967051829&workspace_id=63cf89a0dcc2a171957b290b&link_key=1b834e07-c68b-4bf6-96dd-ab7cdc62f07f"
+}
+```
