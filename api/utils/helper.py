@@ -6,6 +6,7 @@ import requests
 import json
 from api.connector.database_connector import DataCubeConnection
 from .datacube_utils import check_collection
+from datetime import date, datetime, timedelta
 
 data_cube = DataCubeConnection()
 
@@ -316,3 +317,11 @@ def update_line_manager_ticket_count(api_key, workspace_id, line_manager):
 
     except Exception as e:
         print(f"Error updating line manager ticket count: {e}")
+
+
+def generate_date_range(start_date_str, end_date_str):
+    start_date = datetime.strptime(start_date_str, '%Y_%m_%d').date()
+    end_date = datetime.strptime(end_date_str, '%Y_%m_%d').date()
+    
+    delta = end_date - start_date
+    return [(start_date + timedelta(days=i)).strftime('%Y_%m_%d') for i in range(delta.days + 1)]

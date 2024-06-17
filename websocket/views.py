@@ -20,6 +20,7 @@ from api.utils.helper import (
     assign_database_to_product,
     get_unread_messages_for_line_manager,
     update_line_manager_ticket_count,
+    generate_date_range
 
 )
 from api.utils.datacube_utils import (
@@ -45,7 +46,7 @@ from .models import Message
 import requests
 from django.shortcuts import redirect, render
 async_mode = 'gevent'
-# async_mode = "threading"
+#async_mode = "threading"
 
 
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
@@ -2436,14 +2437,25 @@ def ticket_message_event(sid, message):
 
 @sio.event
 def get_ticket_messages(sid, message):
+    
     try:
         ticket = message['ticket_id']
+        ticket_date = message["ticket_date"]
         workspace_id = message['workspace_id']
         api_key = message['api_key']
         product = message['product']
 
+        today_date = str(date.today()).replace("-", "_")
         db_name = map_product_to_db(workspace_id, api_key, product)
-        collections = get_database_collections(api_key, db_name)
+        items = get_database_collections(api_key, db_name)
+        
+        if ticket_date == today_date:
+            collections = [item for item in items if today_date in item]
+        else:
+            date_range = generate_date_range(ticket_date, today_date)
+            collections = [item for item in items if any(date in item for date in date_range)]
+        
+        
         message_filters = {"document_type": "chat", "ticket_id": ticket}
         messages = fetch_data_from_collections(api_key, db_name, collections, message_filters)
         # msg_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"document_type":"chat", "ticket_id":ticket}, limit=50, offset=0)
