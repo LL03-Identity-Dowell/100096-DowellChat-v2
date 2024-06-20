@@ -46,8 +46,8 @@ from rest_framework.views import APIView
 from .models import Message
 import requests
 from django.shortcuts import redirect, render
-async_mode = 'gevent'
-#async_mode = "threading"
+# async_mode = 'gevent'
+async_mode = "threading"
 
 
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
@@ -2509,115 +2509,6 @@ def get_unread_messages(sid, message):
         error_message = str(e)
         sio.emit('ticket_message_response', {'data': error_message, 'status': 'failure', 'operation': 'get_unread_messages'}, room=sid)
 
-# @sio.event
-# def create_ticket(sid, message):
-#     try:
-
-#         email = message['email']
-#         created_at = message['created_at']
-#         link_id = message['link_id']
-#         workspace_id = message['workspace_id']
-#         api_key = message['api_key']
-#         product = message['product'].lower()
-        
-#         line_manager = assign_ticket_to_line_manager(api_key, f"{workspace_id}_cs_ticketing_system_db0", f"{workspace_id}_line_manager", {})
-#         link_db_name = f"{workspace_id}_cs_ticketing_system_db0"
-#         link_coll_name = f"{workspace_id}_master_link"
-        
-#         link_response = data_cube.fetch_data(api_key=api_key, db_name=link_db_name, coll_name=link_coll_name,
-#             filters={"link_id":link_id},
-#             limit=1,
-#             offset=0
-#         )
-
-#         if link_response['success']:
-#             if link_response['data']:
-#                usernames = link_response['data'][0]['usernames']
-#                if usernames:
-#                    user_id = random.choice(usernames) if usernames else usernames[0]
-#                else:
-#                    return sio.emit('ticket_response', {'data':"Can't create Room due to no public username in the link_id", 'status': 'failure', 'operation':'create_ticket'}, room=sid)
-                   
-        
-#         data = {
-#                     "document_type": "ticket",
-#                     "user_id": user_id,
-#                     "email": email,
-#                     "display_name": None,
-#                     "line_manager": line_manager, 
-#                     "is_closed": False,     
-#                     "created_at": created_at, 
-#                     "updated_at": created_at,
-#                     "product": product.lower(),
-
-#         }
-
-#         formatted_date = str(date.today()).replace("-", "_")
-#         db_name = map_product_to_db(workspace_id, api_key, product)
-#         coll_name = f"{workspace_id}_{formatted_date}_{product}_collection"
-
-#         if check_daily_collection(api_key, workspace_id, product):
-                            
-#             response = data_cube.insert_data(api_key=api_key,db_name=db_name, coll_name=coll_name, data=data)
-#             if response['success'] == True:
-#                 sio.enter_room(sid, response['data']['inserted_id'])
-#                 new_ticket_data ={
-#                     '_id': response['data']['inserted_id'], 
-#                     "user_id": user_id,
-#                     "display_name": None,
-#                     "line_manager": line_manager, 
-#                     "is_closed": False,     
-#                     "created_at": created_at, 
-#                     "updated_at": created_at,
-#                     "product": product,
-#                     }
-                
-#                 sio.emit('new_ticket', {'data': new_ticket_data, 'status': 'success', }, room=workspace_id)
-                
-#                 sio.emit('ticket_response', {'data': new_ticket_data, 'status': 'success', 'operation': 'create_ticket'}, room=sid)
-
-#                 """SENDING OF EMAIL"""
-#                 formatted_email = EMAIL_FROM_WEBSITE.format(response['data']['inserted_id'], response['data']['inserted_id'])
-#                 if is_valid_email(email):
-#                     send_email(email, email, "New Ticket Confirmation", formatted_email)
-#                 else:
-#                     print("Email is invalid")
-
-#                 #Update the Master Link
-#                 new_available_link = link_response['data'][0]['available_links'] 
-#                 new_available_link -=1
-
-#                 is_active = True
-#                 if new_available_link == 0:
-#                     is_active = False
-
-#                 usernames.remove(str(user_id))
-
-#                 new_product = link_response['data'][0]['product_distribution'].copy() 
-#                 new_product[product.lower()] -= 1
-
-
-#                 update_link_response = data_cube.update_data(
-#                         api_key=api_key,
-#                         db_name=link_db_name, 
-#                         coll_name=link_coll_name,
-#                         query={'link_id': link_id},
-#                         update_data={
-#                             "available_links": new_available_link,
-#                             "product_distribution": new_product,
-#                             "usernames": usernames,
-#                             "is_active": is_active,
-#                         }
-#                     )
-
-#                 return
-                
-#             else:
-#                 return sio.emit('ticket_response', {'data':"Error Creating Room", 'status': 'failure', 'operation':'create_ticket'}, room=sid)
-#     except Exception as e:
-#         # Handle other exceptions
-#         error_message = str(e)
-#         return sio.emit('ticket_response', {'data': error_message, 'status': 'failure', 'operation':'create_ticket'}, room=sid)
 
 @sio.event
 def create_ticket(sid, message):
@@ -2808,15 +2699,22 @@ def get_tickets_by_date(sid, message):
 def close_ticket(sid, message):
     try:
         ticket_id = message['ticket_id']
+        ticket_date = message["ticket_date"]
         line_manager = message['line_manager']
         workspace_id = message['workspace_id']
         api_key = message['api_key']
         product = message['product']
 
+        today_date = str(date.today()).replace("-", "_")
         db_name = map_product_to_db(workspace_id, api_key, product)
+        items = get_database_collections(api_key, db_name)
         
-        collections = get_database_collections(api_key, db_name)
-
+        if ticket_date == today_date:
+            collections = [item for item in items if today_date in item]
+        else:
+            date_range = generate_date_range(ticket_date, today_date)
+            collections = [item for item in items if any(date in item for date in date_range)]
+        
         ticket_closed = False
         for coll_name in collections:
             response = data_cube.update_data(
