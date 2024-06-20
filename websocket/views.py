@@ -31,6 +31,7 @@ from api.utils.datacube_utils import (
     check_db,
     map_product_to_db,
 )
+from api.utils.ticket import calculate_initial_waiting_time, update_waiting_times
 from api.utils.email.email_template import EMAIL_FROM_WEBSITE
 from api.utils.email.email_sender import send_email, is_valid_email
 from api.connector.database_connector import DataCubeConnection
@@ -2655,8 +2656,7 @@ def create_ticket(sid, message):
         waiting_time_response = data_cube.fetch_data(api_key=api_key,db_name=waiting_time_db_name,coll_name=waiting_time_coll_name,filters={},limit=1, offset=0)
 
         waiting_time = int(waiting_time_response['data'][0]['waiting_time'])
-        new_ticket_waiting_time = waiting_time * int(line_manager_ticket_count)
-        new_waiting_time_response = {"waiting_time":new_ticket_waiting_time}
+        new_waiting_time_response = {"waiting_time":calculate_initial_waiting_time(line_manager_ticket_count, waiting_time)}
         
         #Prepare ticket data
         data = {
@@ -2668,7 +2668,8 @@ def create_ticket(sid, message):
             "is_closed": False,     
             "created_at": created_at, 
             "updated_at": created_at,
-            "product": product
+            "product": product,
+            "waiting_time":calculate_initial_waiting_time(int(line_manager_ticket_count), waiting_time)
         }
 
         formatted_date = str(date.today()).replace("-", "_")
@@ -2693,6 +2694,7 @@ def create_ticket(sid, message):
             "created_at": created_at,
             "updated_at": created_at,
             "product": product,
+            "waiting_time":calculate_initial_waiting_time(int(line_manager_ticket_count), waiting_time)
         }
 
         sio.emit('ticket_response', {'data': new_ticket_data, 'status': 'success', 'operation': 'create_ticket'}, room=sid)
