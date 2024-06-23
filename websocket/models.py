@@ -1,6 +1,7 @@
 from django.db import models
 import uuid
 
+
 # Create your models here.
 
 class Room(models.Model):
@@ -23,5 +24,17 @@ class Message(models.Model):
     message_type = models.CharField(max_length=50, null=True)
 
     
+    def __str__(self):
+        return f'{self.room_id} - {self.author}'
+    
+class TicketMessage(models.Model):
+    id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
+    ticket_id = models.CharField(max_length=50)
+    message_data = models.TextField(null=True)
+    author = models.CharField(max_length=250)
+    reply_to = models.CharField(max_length=250)
+    is_read = models.BooleanField(default=False)
+    created_at = models.CharField(max_length=250)
+
     def __str__(self):
         return f'{self.room_id} - {self.author}'
