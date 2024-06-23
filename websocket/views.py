@@ -2,7 +2,7 @@ import re
 import random
 from api.kafka.kafka_producer import ProducerTicketChat
 from django.conf import settings
-from datetime import date
+from datetime import date, datetime
 import base64
 import socketio
 from django.http import HttpResponse
@@ -31,7 +31,8 @@ from api.utils.datacube_utils import (
     check_db,
     map_product_to_db,
 )
-from api.utils.ticket import calculate_initial_waiting_time, update_waiting_times
+from api.utils.ticket import calculate_initial_waiting_time, convert_timestamp,fetch_data_for_collection
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from api.utils.email.email_template import EMAIL_FROM_WEBSITE
 from api.utils.email.email_sender import send_email, is_valid_email
 from api.connector.database_connector import DataCubeConnection
@@ -46,8 +47,8 @@ from rest_framework.views import APIView
 from .models import Message
 import requests
 from django.shortcuts import redirect, render
-# async_mode = 'gevent'
-async_mode = "threading"
+async_mode = 'gevent'
+#async_mode = "threading"
 
 
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
@@ -2705,62 +2706,107 @@ def close_ticket(sid, message):
         api_key = message['api_key']
         product = message['product']
 
-        today_date = str(date.today()).replace("-", "_")
         db_name = map_product_to_db(workspace_id, api_key, product)
-        items = get_database_collections(api_key, db_name)
-        
-        if ticket_date == today_date:
-            collections = [item for item in items if today_date in item]
-        else:
-            date_range = generate_date_range(ticket_date, today_date)
-            collections = [item for item in items if any(date in item for date in date_range)]
-        
         ticket_closed = False
-        for coll_name in collections:
-            response = data_cube.update_data(
+        
+        response = data_cube.update_data(
+            api_key=api_key,
+            db_name=db_name,
+            coll_name = f"{workspace_id}_{ticket_date}_{product}_collection",
+            query={'_id': ticket_id},
+            update_data={'is_closed': True}
+        )
+        if response['success'] and response['message'] != '0 documents updated successfully!':
+            ticket_closed = True
+            sio.emit('ticket_response', {'data': "Ticket Closed", 'status': 'success', 'operation': 'close_ticket'}, room=sid)
+            
+            # Update line manager's ticket count
+            line_manager_db_name = f"{workspace_id}_cs_ticketing_system_db0"
+            line_manager_coll_name = f"{workspace_id}_line_manager"
+            line_manager_data = data_cube.fetch_data(
                 api_key=api_key,
-                db_name=db_name,
-                coll_name=coll_name,
-                query={'_id': ticket_id},
-                update_data={'is_closed': True}
+                db_name=line_manager_db_name,
+                coll_name=line_manager_coll_name,
+                filters={'user_id': line_manager},
+                limit=1,
+                offset=0
             )
-            if response['success'] and response['message'] != '0 documents updated successfully!':
-                ticket_closed = True
-                sio.emit('ticket_response', {'data': "Ticket Closed", 'status': 'success', 'operation': 'close_ticket'}, room=sid)
-                
-                # Update line manager's ticket count
-                line_manager_db_name = f"{workspace_id}_cs_ticketing_system_db0"
-                line_manager_coll_name = f"{workspace_id}_line_manager"
-                line_manager_data = data_cube.fetch_data(
+
+            if line_manager_data:
+                new_ticket_count = line_manager_data['data'][0]['ticket_count'] 
+                new_ticket_count -=1
+                line_manager_response = data_cube.update_data(
                     api_key=api_key,
                     db_name=line_manager_db_name,
                     coll_name=line_manager_coll_name,
-                    filters={'user_id': line_manager},
-                    limit=1,
-                    offset=0
+                    query={'user_id': line_manager},
+                    update_data={"ticket_count":new_ticket_count}
                 )
 
-                if line_manager_data:
-                    new_ticket_count = line_manager_data['data'][0]['ticket_count'] 
-                    new_ticket_count -=1
-                    line_manager_response = data_cube.update_data(
-                        api_key=api_key,
-                        db_name=line_manager_db_name,
-                        coll_name=line_manager_coll_name,
-                        query={'user_id': line_manager},
-                        update_data={"ticket_count":new_ticket_count}
-                    )
 
-
-                    if line_manager_response['success']:
-                        print(f"Ticket count updated for line manager: {line_manager}")
-                    else:
-                        print("Failed to update ticket count for line manager:", line_manager_response['message'])
+                if line_manager_response['success']:
+                    print(f"Ticket count updated for line manager: {line_manager}")
                 else:
-                    print("Line manager not found:", line_manager)
+                    print("Failed to update ticket count for line manager:", line_manager_response['message'])
+            else:
+                print("Line manager not found:", line_manager)
+
+            #Recalculate Waiting time
+            waiting_time_db_name = f"{workspace_id}_cs_ticketing_system_db0"
+            waiting_time_coll_name = f"{workspace_id}_setting"
+            
+            waiting_time_response = data_cube.fetch_data(
+                api_key=api_key, db_name=waiting_time_db_name, coll_name=waiting_time_coll_name, filters={}, limit=1, offset=0)
+            
+            waiting_time_per_ticket = int(waiting_time_response['data'][0]['waiting_time'])
+           
+            collections = get_database_collections(api_key, db_name)
+
+            queue = []
+            with ThreadPoolExecutor() as executor:
+                future_to_coll_name = {executor.submit(fetch_data_for_collection, data_cube, api_key, db_name, coll_name, line_manager): coll_name for coll_name in collections}
+                for future in as_completed(future_to_coll_name):
+                    try:
+                        data = future.result()
+                        queue.extend(data)
+                    except Exception as e:
+                        print(f"Error fetching data for collection {future_to_coll_name[future]}: {e}")
+
+            if queue:
+                queue.sort(key=lambda x: datetime.fromisoformat(x['created_at'].replace('Z', '+00:00')))
+
+                updates = []
+                for i, ticket in enumerate(queue):
+                    converted_timestamp = convert_timestamp(ticket['created_at'])
+                    ticket_col = None
+                    for coll_name in collections:
+                        if converted_timestamp in coll_name:
+                            ticket_col = coll_name
+                            break
+                    
+                    if not ticket_col:
+                        print(f"No collection found for ticket ID: {ticket['_id']} with timestamp: {converted_timestamp}")
+                        continue
+
+                    ticket_waiting_time = waiting_time_per_ticket * i if i > 0 else 0
+                    updates.append({
+                        'api_key': api_key,
+                        'db_name': db_name,
+                        'coll_name': ticket_col,
+                        'query': {'_id': ticket['_id']},
+                        'update_data': {"waiting_time": ticket_waiting_time}
+                    })
+                    sio.emit('waiting_time_response', {'data': {"waiting_time":ticket_waiting_time}, 'status': 'success', 'operation': 'create_ticket'}, room=ticket['_id'])
+                    
+                for update in updates:
+                    try:
+                        data_cube.update_data(**update)
+                    except Exception as e:
+                        print(f"Error updating ticket {update['query']['_id']}: {e}")
+
+                print("Waiting times updated successfully.")
 
 
-                break
 
         if not ticket_closed:
             sio.emit('ticket_response', {'data': "Ticket Already Closed", 'status': 'success', 'operation': 'close_ticket'}, room=sid)    
