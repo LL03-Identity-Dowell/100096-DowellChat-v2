@@ -14,12 +14,12 @@ RUN pip install -r requirements.txt --no-cache-dir
 # Copy the rest of the Django app code to the container
 COPY . /usr/src/app
 
-# Copy the entrypoint script into the container
-COPY ./entrypoint.sh /usr/src/app/entrypoint.sh
-RUN chmod +x /usr/src/app/entrypoint.sh
+#RUN python manage.py makemigrations
+RUN python manage.py migrate
+# Install dependencie
 
 # Expose the port on which the Django app will run
 EXPOSE 8001
 
-# Set the entrypoint to the script
-ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
+# Update the CMD to run uWSGI for your application
+# CMD ["gunicorn", "-k", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", "-w", "1", "Chat.wsgi:application", "--timeout", "1060", "-b", ":8000"]
