@@ -44,11 +44,11 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Message
+from .models import Message, TicketMessage
 import requests
 from django.shortcuts import redirect, render
 async_mode = 'gevent'
-#async_mode = "threading"
+# async_mode = "threading"
 
 
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
@@ -2431,6 +2431,18 @@ def ticket_message_event(sid, message):
         }
         
         sio.emit('ticket_message_response', response, room=workspace_id)
+        
+        #Saving of Messages Locally
+        TicketMessage.objects.create(
+            ticket_id=ticket_id,
+            message_data=message_data,
+            author=user_id,
+            reply_to=reply_to,
+            created_at=created_at,
+
+        )
+
+        #Pushing the messages to kafka consumer
         producerTicketChat.publish(data)
 
     except Exception as e:
