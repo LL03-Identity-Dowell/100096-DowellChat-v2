@@ -4,9 +4,10 @@ services:
   chat-backend:
     build:
       context: .
+      dockerfile: ./compose/django/Dockerfile
     container_name: dowellchat-backend
     restart: always
-    command: gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 Chat.wsgi:application --timeout 1060
+    command: gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 Chat.wsgi:application --timeout 9999
     ports:
       - "8001:8001"
     expose:
@@ -16,6 +17,8 @@ services:
     environment:
       API_KEY: 1b834e07-c68b-4bf6-96dd-ab7cdc62f07f
       ENVIRON: kafka
+    depends_on:
+      - postgres
 
   zookeeper:
     image: zookeeper:latest
@@ -57,7 +60,20 @@ services:
       - kafka
       - zookeeper
 
+  postgres:
+    build:
+      context: .
+      dockerfile: ./compose/postgres/Dockerfile
+    container_name: dowell_postgres
+    volumes:
+      - dowell_postgres_data:/var/lib/postgresql/data
+      - dowell_postgres_data_backups:/backups
+    env_file:
+      - .env
 
+volumes:
+  dowell_postgres_data: {}
+  dowell_postgres_data_backups: {}
 
 
  # nginx:

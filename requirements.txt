@@ -18,3 +18,5 @@ requests
 confluent-kafka
 pika
 drf-yasg==1.21.7 
+psycopg[binary]==3.1.12
+django-cors-headers==4.3.0

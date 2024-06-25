@@ -15,7 +15,7 @@ RUN pip install -r requirements.txt --no-cache-dir
 COPY . /usr/src/app
 
 # RUN python manage.py makemigrations
-# RUN python manage.py migrate
+RUN python manage.py migrate
 # Install dependencie
 
 # Expose the port on which the Django app will run
