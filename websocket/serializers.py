@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Room, Message
+from .models import Room, Message, TicketMessage
 
 class RoomSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,3 +14,8 @@ class MessageSerializer(serializers.Serializer):
     side = serializers.CharField(allow_null=False, allow_blank=False)
     author = serializers.CharField(allow_null=False, allow_blank=False)
     message_type = serializers.CharField(allow_null=False, allow_blank=False)
+
+class TicketMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TicketMessage
+        fields='__all__'

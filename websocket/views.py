@@ -36,7 +36,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from api.utils.email.email_template import EMAIL_FROM_WEBSITE
 from api.utils.email.email_sender import send_email, is_valid_email
 from api.connector.database_connector import DataCubeConnection
-from .serializers import MessageSerializer
+from .serializers import MessageSerializer, TicketMessageSerializer
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from django.utils.decorators import method_decorator
@@ -2459,6 +2459,15 @@ def get_ticket_messages(sid, message):
         api_key = message['api_key']
         product = message['product']
 
+        messages = TicketMessage.objects.filter(ticket_id=ticket).all()
+        serializer = TicketMessageSerializer(messages, many=True)
+
+        sio.enter_room(sid, ticket)
+        sio.emit('ticket_message_response', {'data': serializer.data, 'status': 'success', 'operation': 'get_ticket_messages'}, room=sid)
+        
+        # Perform batch update using update()
+        messages.update(is_read=True)
+
         today_date = str(date.today()).replace("-", "_")
         db_name = map_product_to_db(workspace_id, api_key, product)
         items = get_database_collections(api_key, db_name)
@@ -2474,8 +2483,8 @@ def get_ticket_messages(sid, message):
         messages = fetch_data_from_collections(api_key, db_name, collections, message_filters)
         # msg_response = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"document_type":"chat", "ticket_id":ticket}, limit=50, offset=0)
         if messages:
-            sio.enter_room(sid, ticket)
-            sio.emit('ticket_message_response', {'data': messages, 'status': 'success', 'operation': 'get_ticket_messages'}, room=sid)
+            #sio.enter_room(sid, ticket)
+            #sio.emit('ticket_message_response', {'data': messages, 'status': 'success', 'operation': 'get_ticket_messages'}, room=sid)
             #Mark the messages as read
             update_data = {
                 'is_read': True,
@@ -2483,7 +2492,8 @@ def get_ticket_messages(sid, message):
             for coll_name in collections:
                 mark_read = data_cube.update_data(api_key=api_key, db_name=db_name, coll_name=coll_name, query={"document_type":"ticket", "ticket_id":ticket}, update_data=update_data)
         else:
-            sio.emit('ticket_message_response', {'data': [], 'status': 'success', 'operation': 'get_ticket_messages'}, room=sid)    
+            pass
+            #sio.emit('ticket_message_response', {'data': [], 'status': 'success', 'operation': 'get_ticket_messages'}, room=sid)    
         return
 
     except Exception as e:

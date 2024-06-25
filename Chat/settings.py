@@ -90,25 +90,25 @@ WSGI_APPLICATION = 'Chat.wsgi.application'
 #     }
 # }
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#     }
+# }
 
 
 #FOR DEVELOPMENT
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'dowell',
-#         'USER': 'postgres',
-#         'PASSWORD': 'root',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',
+        'USER': 'postgres.begjxxkeecbcggqptcea',
+        'PASSWORD': 'fPmYXjSfHWvgOPPaevxGuKbkdq1zUZjJ7z8ZUEstsFWGbwgXkTUrI1BRX3us933a',
+        'HOST': 'aws-0-eu-central-1.pooler.supabase.com',
+        'PORT': '6543',
+    }
+}
 
 
 # Password validation
