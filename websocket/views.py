@@ -48,7 +48,7 @@ from .models import Message, TicketMessage
 import requests
 from django.shortcuts import redirect, render
 async_mode = 'gevent'
-# async_mode = "threading"
+#async_mode = "threading"
 
 
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)

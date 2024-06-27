@@ -25,6 +25,7 @@ from api.utils.datacube_utils import (
 )
 
 data_cube = DataCubeConnection()
+import jwt
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -121,34 +122,40 @@ class Masterlink(APIView):
             )
 
     def post(self, request):
-        try:            
+        try:
+            secret_key = "master_link"            
             serializer = MasterLinkSerializer(data=request.data)
             if serializer.is_valid():
                 workspace_id = serializer.validated_data['workspace_id']
                 api_key = serializer.validated_data['api_key']
                 url = "https://www.dowellchat.uxlivinglab.online/"
                 link_id = ''.join([str(random.randint(0, 9)) for _ in range(20)])
-                link = f"{url}?workspace_id={workspace_id}&link_id={link_id}"
                 master_link = f"https://www.dowellchat.uxlivinglab.online/api/share/?link_id={link_id}&workspace_id={workspace_id}&link_key={api_key}"
                 
-                
-                data = {
+                payload = {
                     "link_id":link_id,
                     "number_of_links": serializer.validated_data['number_of_links'],
                     "available_links": serializer.validated_data['number_of_links'],
                     "product_distribution": serializer.validated_data['product_distribution'],
-                    "link": link,
                     "usernames": serializer.validated_data['usernames'],
                     "is_active": True,
                     "master_link": master_link,
+                    "workspace_id": workspace_id,
+                    "api_key": api_key,
                     "created_at": serializer.validated_data['created_at'],
+                    
                 }
+                token = jwt.encode(payload, secret_key, algorithm="HS256")
+                link = f"{url}?token={token}"
+                
+                payload['link']=link
 
+                
                 db_name = f"{workspace_id}_cs_ticketing_system_db0"
                 coll_name = f"{workspace_id}_master_link"
 
                 if check_collection(api_key, workspace_id, coll_name, db_name):            
-                    response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
+                    response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=payload)
 
                     if response['success'] == True:
                         return Response(
