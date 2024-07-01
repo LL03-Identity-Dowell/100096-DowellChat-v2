@@ -48,7 +48,7 @@ from .models import Message, TicketMessage
 import requests
 from django.shortcuts import redirect, render
 async_mode = 'gevent'
-#async_mode = "threading"
+# async_mode = "threading"
 
 
 sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
@@ -2541,6 +2541,7 @@ def create_ticket(sid, message):
         created_at = message['created_at']
         link_id = message['link_id']
         workspace_id = message['workspace_id']
+        user_id = message['user_id']
         api_key = message['api_key']
         product = message['product'].lower()
         
@@ -2551,19 +2552,7 @@ def create_ticket(sid, message):
 
         link_db_name = f"{workspace_id}_cs_ticketing_system_db0"
         link_coll_name = f"{workspace_id}_master_link"
-
-        # Fetch link data
-        link_response = data_cube.fetch_data(api_key=api_key, db_name=link_db_name, coll_name=link_coll_name, filters={"link_id": link_id}, limit=1, offset=0)
-        if not link_response['success'] or not link_response['data']:
-            return sio.emit('ticket_response', {'data': "Invalid link ID", 'status': 'failure', 'operation': 'create_ticket'}, room=sid)
-
-        link_data = link_response['data'][0]
-        usernames = link_data['usernames']
-        if not usernames:
-            return sio.emit('ticket_response', {'data': "No public username in the link_id", 'status': 'failure', 'operation': 'create_ticket'}, room=sid)
-
-        user_id = random.choice(usernames)
-
+       
         #Get the waiting time
         waiting_time_db_name = f"{workspace_id}_cs_ticketing_system_db0"
         waiting_time_coll_name = f"{workspace_id}_setting"
@@ -2621,6 +2610,19 @@ def create_ticket(sid, message):
             send_email(email, email, "New Ticket Confirmation", formatted_email)
         else:
             print("Email is invalid")
+
+         # Fetch link data
+        link_response = data_cube.fetch_data(api_key=api_key, db_name=link_db_name, coll_name=link_coll_name, filters={"link_id": link_id}, limit=1, offset=0)
+        # if not link_response['success'] or not link_response['data']:
+        #     return sio.emit('ticket_response', {'data': "Invalid link ID", 'status': 'failure', 'operation': 'create_ticket'}, room=sid)
+
+        link_data = link_response['data'][0]
+        usernames = link_data['usernames']
+        # if not usernames:
+        #     return sio.emit('ticket_response', {'data': "No public username in the link_id", 'status': 'failure', 'operation': 'create_ticket'}, room=sid)
+
+        #user_id = random.choice(usernames)
+
 
         # Update the master link
         new_available_link = int(link_data['available_links']) - 1
