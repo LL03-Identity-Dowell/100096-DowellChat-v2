@@ -38,3 +38,22 @@ class TicketMessage(models.Model):
 
     def __str__(self):
         return f'{self.room_id} - {self.author}'
+    
+
+class Workspace(models.Model):
+    org_id = models.CharField(max_length=255, unique=True)
+    api_key = models.CharField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.org_id
+    
+class Topic(models.Model):
+    id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
+    name = models.CharField(max_length=100)
+    db_name = models.CharField(max_length=250, null=True, blank=True)
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} {self.workspace.org_id}"
+    
