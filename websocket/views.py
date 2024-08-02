@@ -23,6 +23,7 @@ from api.utils.helper import (
     generate_date_range
 
 )
+from django.shortcuts import get_object_or_404
 from api.utils.datacube_utils import (
     check_daily_collection, 
     check_collection, 
@@ -1974,36 +1975,15 @@ def create_topic(sid, message):
 def get_all_topics(sid, message):
     try:
         workspace_id = message['workspace_id']
-        api_key = message['api_key']
         
+        workspace = get_object_or_404(Workspace, org_id=workspace_id)
+        topics = Topic.objects.filter(workspace = workspace)
 
-        db_name = f"{workspace_id}_cs_ticketing_system_db0"
-        coll_name = f"{workspace_id}_topics"
-
-        if not check_db(workspace_id, api_key, db_name):
-            return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'get_all_topics'}, room=sid)
-
-        if check_collection(api_key, workspace_id, coll_name, db_name):
-
-            response = data_cube.fetch_data(
-                api_key=api_key,
-                db_name=db_name,
-                coll_name=coll_name,
-                filters={},
-                limit=199,
-                offset=0
-            )
-        
-            if response['success']:
-                sio.enter_room(sid, workspace_id)
-                if not response['data']:
-                    return sio.emit('setting_response', {'data': 'No Topic found for this Workspace', 'status': 'failure', 'operation': 'get_all_topics'}, room=sid)
-
-                else:
-                    return sio.emit('setting_response', {'data': response['data'], 'status': 'success', 'operation': 'get_all_topics'}, room=sid)
-            else:
-                # Error in fetching data
-                return sio.emit('setting_response', {'data': response['message'], 'status': 'failure', 'operation': 'get_all_topics'}, room=sid)
+        if topics:
+            serializer = TopicSerializer(topics, many=True)
+            return sio.emit('setting_response', {'data': serializer.data, 'status': 'success', 'operation': 'get_all_topics'}, room=sid)
+        else:
+            return sio.emit('setting_response', {'data': 'No Topic found for this Workspace', 'status': 'failure', 'operation': 'get_all_topics'}, room=sid)
 
     except Exception as e:
         # Handle other exceptions
