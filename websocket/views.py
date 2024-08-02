@@ -1,6 +1,6 @@
 import re
 import random
-from api.kafka.kafka_producer import ProducerTicketChat
+from api.kafka.kafka_producer import ProducerTicketChat, ProducerAllEvents
 from django.conf import settings
 from datetime import date, datetime
 import base64
@@ -36,7 +36,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from api.utils.email.email_template import EMAIL_FROM_WEBSITE
 from api.utils.email.email_sender import send_email, is_valid_email
 from api.connector.database_connector import DataCubeConnection
-from .serializers import MessageSerializer, TicketMessageSerializer
+from .serializers import MessageSerializer, TicketMessageSerializer, TopicSerializer
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from django.utils.decorators import method_decorator
@@ -44,7 +44,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Message, TicketMessage
+from .models import Message, TicketMessage, Workspace, Topic
 import requests
 from django.shortcuts import redirect, render
 async_mode = 'gevent'
@@ -1913,24 +1913,22 @@ sio.register_namespace(PublicNamespace('/public'))
 """TOPIC RELATED EVENTS"""
 @sio.event
 def create_topic(sid, message):
+    producerAllEvents = ProducerAllEvents()
     try:
         workspace_id = message['workspace_id']
         api_key = message['api_key']
 
         name = message ['name'].lower().replace(" ", "_")
         created_at = message['created_at']
-        
+
+        topic_db = assign_database_to_product(workspace_id, api_key)
         data = {
                 "name": name,
-                "db_name": assign_database_to_product(workspace_id, api_key),
+                "db_name": topic_db,
                 "created_at": created_at, 
         }
         
         db_name = f"{workspace_id}_cs_ticketing_system_db0"
-        coll_name = f"{workspace_id}_topics"
-        topic_db = assign_database_to_product(workspace_id, api_key)
-
-        
 
         #Check if the DB0 Exists
         if not check_db(workspace_id, api_key, db_name):
@@ -1940,20 +1938,32 @@ def create_topic(sid, message):
         if not check_db(workspace_id, api_key, topic_db):
             return sio.emit('setting_response', {'data':f"DB {topic_db} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)    
 
+        workspace, workspace_created = Workspace.objects.get_or_create(
+            org_id=workspace_id,
+            api_key=api_key
+        )
+        topic, created = Topic.objects.get_or_create(
+            name=data['name'],
+            db_name=data['db_name'],
+            workspace=workspace
+        )
+
+        if created:
+            serializer = TopicSerializer(topic, many=False)
+            sio.emit('setting_response', {'data':serializer.data, 'status': 'success', 'operation':'create_topic'}, room=sid)
+        else:
+            return sio.emit('setting_response', {'data':f"Topic {name} already exists", 'status': 'failure', 'operation':'create_topic'}, room=sid)
         
-        if check_collection(api_key, workspace_id, coll_name, db_name):
+        #Sending data to kafka
+        other_data = {
+            "ddb_name":db_name,
+            "api_key":api_key,
+            "workspace_id": workspace_id
+        }
+        data.update(other_data)
+        producerAllEvents.publish(data, event_type="create_topic")
+        return
             
-            check_topic = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"name":name},limit=200, offset=0)
-            if check_topic['success']:
-                if check_topic['data']:
-                    return sio.emit('setting_response', {'data':f"Topic {name} already exists", 'status': 'failure', 'operation':'create_topic'}, room=sid)
-
-            response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
-
-            if response['success'] == True:
-                return sio.emit('setting_response', {'data':response['data'], 'status': 'success', 'operation':'create_topic'}, room=sid)
-            else:
-                return sio.emit('setting_response', {'data':response['message'], 'status': 'failure', 'operation':'create_topic'}, room=sid)
     except Exception as e:
         # Handle other exceptions
         error_message = str(e)
@@ -2392,7 +2402,7 @@ def get_meta_setting(sid, message):
 """ TICKET CHAT STARTS HERE"""
 @sio.event
 def ticket_message_event(sid, message):
-    producerTicketChat = ProducerTicketChat()
+    producerAllEvents = ProducerAllEvents()
     try:
 
         ticket_id = message['ticket_id']
@@ -2415,7 +2425,6 @@ def ticket_message_event(sid, message):
                     "product": product.lower(),
                     "workspace_id":workspace_id,
                     "api_key": api_key,
-                    "sid":sid
 
         }
 
@@ -2443,7 +2452,7 @@ def ticket_message_event(sid, message):
         )
 
         #Pushing the messages to kafka consumer
-        producerTicketChat.publish(data)
+        producerAllEvents.publish(data, event_type="ticket_message")
 
     except Exception as e:
         error_message = str(e)
