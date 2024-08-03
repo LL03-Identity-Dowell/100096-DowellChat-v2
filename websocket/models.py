@@ -57,3 +57,16 @@ class Topic(models.Model):
     def __str__(self):
         return f"{self.name} {self.workspace.org_id}"
     
+
+class LineManager(models.Model):
+    id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
+    user_id = models.CharField(max_length=100)
+    positions_in_a_line = models.PositiveIntegerField(default=0)
+    average_serving_time = models.PositiveIntegerField(default=0)
+    ticket_count = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user_id} {self.workspace.org_id}"

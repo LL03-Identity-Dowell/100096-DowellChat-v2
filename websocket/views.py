@@ -37,7 +37,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from api.utils.email.email_template import EMAIL_FROM_WEBSITE
 from api.utils.email.email_sender import send_email, is_valid_email
 from api.connector.database_connector import DataCubeConnection
-from .serializers import MessageSerializer, TicketMessageSerializer, TopicSerializer
+from .serializers import MessageSerializer, TicketMessageSerializer, TopicSerializer, LineManagerSerializer
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from django.utils.decorators import method_decorator
@@ -45,7 +45,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Message, TicketMessage, Workspace, Topic
+from .models import Message, TicketMessage, Workspace, Topic, LineManager
 import requests
 from django.shortcuts import redirect, render
 async_mode = 'gevent'
@@ -1994,47 +1994,51 @@ def get_all_topics(sid, message):
 """ LINE MANAGER RELATED EVENTS"""
 @sio.event
 def create_line_manager(sid, message):
+    producerAllEvents = ProducerAllEvents()
     try:
         user_id = message['user_id']
         created_at = message['created_at']
         workspace_id = message['workspace_id']
         api_key = message['api_key']
-
-        
-        
-        data = {
-                "user_id": user_id,
-                "positions_in_a_line": calculate_position_in_line(api_key, workspace_id),
-                "average_serving_time":0,
-                "ticket_count": 0,
-                "is_active": True,
-                "created_at": created_at, 
-        }
-        
+        positions_in_a_line = calculate_position_in_line(workspace_id)
+                
         db_name = f"{workspace_id}_cs_ticketing_system_db0"
-        coll_name = f"{workspace_id}_line_manager"
-
-        
 
         #Check if the DB0 Exists
         if not check_db(workspace_id, api_key, db_name):
             return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
 
-       
+        workspace, workspace_created = Workspace.objects.get_or_create(
+            org_id=workspace_id,
+            api_key=api_key
+        )
+
+        line_manager, created= LineManager.objects.get_or_create(
+            user_id = user_id,
+            positions_in_a_line = positions_in_a_line,
+            workspace=workspace
+
+        )
+
+        if created:
+            serializer = LineManagerSerializer(line_manager, many=False)
+            sio.emit('setting_response', {'data':serializer.data, 'status': 'success', 'operation':'create_line_manager'}, room=sid)
+        else:
+            return sio.emit('setting_response', {'data':f"user {user_id} already exists", 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
         
-        if check_collection(api_key, workspace_id, coll_name, db_name):
-            
-            check_user = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"user_id":user_id},limit=200, offset=0)
-            if check_user['success']:
-                if check_user['data']:
-                    return sio.emit('setting_response', {'data':f"User {user_id} already exists", 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
-
-            response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
-
-            if response['success'] == True:
-                return sio.emit('setting_response', {'data':response['data'], 'status': 'success', 'operation':'create_line_manager'}, room=sid)
-            else:
-                return sio.emit('setting_response', {'data':response['message'], 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
+        data = {
+                "user_id": user_id,
+                "positions_in_a_line": positions_in_a_line,
+                "average_serving_time":0,
+                "ticket_count": 0,
+                "is_active": True,
+                "created_at": created_at,
+                "db_name": db_name,
+                "api_key": api_key,
+                "workspace_id":workspace_id,
+        }
+        producerAllEvents.publish(data, event_type="create_linemanager")
+        return
     except Exception as e:
         # Handle other exceptions
         error_message = str(e)

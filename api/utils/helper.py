@@ -7,6 +7,8 @@ import json
 from api.connector.database_connector import DataCubeConnection
 from .datacube_utils import check_collection
 from datetime import date, datetime, timedelta
+from django.db.models import Max
+from websocket.models import LineManager
 
 data_cube = DataCubeConnection()
 
@@ -205,23 +207,45 @@ def assign_ticket_to_line_manager(api_key, db_name, coll_name, filters, limit=19
     return assigned_line_manager['user_id'], assigned_line_manager['ticket_count']
 
 
-def calculate_position_in_line(api_key, workspace_id):
-    try:
-        # Retrieve line managers
-        line_manager_db_name = f"{workspace_id}_cs_ticketing_system_db0"
-        line_manager_coll_name = f"{workspace_id}_line_manager"
-        line_managers_data = data_cube.fetch_data(
-            api_key=api_key,
-            db_name=line_manager_db_name,
-            coll_name=line_manager_coll_name,
-            filters={},
-            limit=0,  # Fetch all line managers
-            offset=0
-        )
+# def calculate_position_in_line(api_key, workspace_id):
+#     try:
+#         # Retrieve line managers
+#         line_manager_db_name = f"{workspace_id}_cs_ticketing_system_db0"
+#         line_manager_coll_name = f"{workspace_id}_line_manager"
+#         line_managers_data = data_cube.fetch_data(
+#             api_key=api_key,
+#             db_name=line_manager_db_name,
+#             coll_name=line_manager_coll_name,
+#             filters={},
+#             limit=0,  # Fetch all line managers
+#             offset=0
+#         )
 
-        # Extract positions_in_a_line from line managers data
-        positions = [line_manager['positions_in_a_line']
-                     for line_manager in line_managers_data['data']]
+#         # Extract positions_in_a_line from line managers data
+#         positions = [line_manager['positions_in_a_line']
+#                      for line_manager in line_managers_data['data']]
+
+#         # Sort positions to find gaps and the highest position
+#         positions.sort()
+#         highest_position = 0
+#         for pos in positions:
+#             if pos - highest_position > 1:
+#                 return highest_position + 1
+#             highest_position = pos
+
+#         # If no gaps, return the next position after the highest
+#         return highest_position + 1
+#     except Exception as e:
+#         # Handle exceptions
+#         raise e
+
+def calculate_position_in_line(workspace_id):
+    try:
+        # Retrieve all line managers for the given workspace
+        line_managers = LineManager.objects.filter(workspace__org_id=workspace_id)
+
+        # Extract positions_in_a_line from line managers
+        positions = list(line_managers.values_list('positions_in_a_line', flat=True))
 
         # Sort positions to find gaps and the highest position
         positions.sort()
@@ -236,7 +260,6 @@ def calculate_position_in_line(api_key, workspace_id):
     except Exception as e:
         # Handle exceptions
         raise e
-
 
 def assign_database_to_product(workspace_id, api_key):
     check_topic = data_cube.fetch_data(
