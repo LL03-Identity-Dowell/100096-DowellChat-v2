@@ -3001,3 +3001,32 @@ def get_share_link_details(sid, message):
         # Handle other exceptions
         error_message = str(e)
         return sio.emit('share_link_response', {'data': error_message, 'status': 'failure', 'operation':'get_share_link_details'}, room=sid)
+
+
+@sio.event
+def queue_update(sid, message):
+    try:
+        workspace_id = message['workspace_id']
+        api_key = message['api_key']
+        
+        # Get a free line manager
+        line_manager, line_manager_ticket_count = assign_ticket_to_line_manager(api_key, f"{workspace_id}_cs_ticketing_system_db0", f"{workspace_id}_line_manager", {})
+        if not line_manager:
+            return sio.emit('queue_response', {'data': "No available line manager", 'status': 'failure', 'operation': 'queue_update'}, room=sid)
+       
+        #Get the waiting time
+        waiting_time_db_name = f"{workspace_id}_cs_ticketing_system_db0"
+        waiting_time_coll_name = f"{workspace_id}_setting"
+        waiting_time_response = data_cube.fetch_data(api_key=api_key,db_name=waiting_time_db_name,coll_name=waiting_time_coll_name,filters={},limit=1, offset=0)
+        waiting_time = int(waiting_time_response['data'][0]['waiting_time'])
+
+        data = {
+            "ticket_count": line_manager_ticket_count,
+            "waiting_time":calculate_initial_waiting_time(int(line_manager_ticket_count), waiting_time)
+        }
+
+        return sio.emit('queue_response', {'data': data, 'status': 'success', 'operation': 'queue_update'}, room=sid)
+
+    except Exception as e:
+        error_message = str(e)
+        return sio.emit('queue_response', {'data': error_message, 'status': 'failure', 'operation': 'queue_update'}, room=sid)
