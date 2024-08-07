@@ -18,6 +18,7 @@ from .models import MasterLink
 from websocket.models import Workspace
 from .kafka.kafka_producer import ProducerAllEvents
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 from api.utils.datacube_utils import (
     check_collection,
@@ -49,33 +50,19 @@ def public(request):
 def redirect_to_product_link(request):
     try:
         link_id = request.GET["link_id"]
-        workspace_id = request.GET["workspace_id"]
-        api_key = request.GET["link_key"]
-
-        db_name = f"{workspace_id}_cs_ticketing_system_db0"
-        coll_name = f"{workspace_id}_master_link"
-        filters = {"link_id": link_id, "is_active": True, "available_links": {"$ne": 0}}
-
-        find_link = data_cube.fetch_data(
-            api_key=api_key,
-            db_name=db_name,
-            coll_name=coll_name,
-            filters=filters,
-            limit=1,
-            offset=0,
-        )
-
-        if find_link["success"]:
-            if find_link["data"]:
-                redirect_url = find_link["data"][0]["link"]
-                return redirect(redirect_url)
+        find_link = MasterLink.objects.filter(
+            link_id=link_id,
+            is_active=True,
+            available_links__gt=0
+        ).first()
+        if find_link:
+            return redirect(find_link.link)
 
         return render(request, "api/error.html")
     except KeyError as e:
         context = {"error": e}
 
         return render(request, "api/error.html", context)
-        # return HttpResponse(f"Missing parameter: {e}")
 
 
 class MasterlinkAPI(APIView):  
@@ -123,7 +110,7 @@ class MasterlinkAPI(APIView):
                 api_key = serializer.validated_data["api_key"]
                 url = "https://www.dowellchat.uxlivinglab.online/"
                 link_id = "".join([str(random.randint(0, 9)) for _ in range(20)])
-                master_link = f"https://www.dowellchat.uxlivinglab.online/api/share/?link_id={link_id}&workspace_id={workspace_id}&link_key={api_key}"
+                master_link = f"https://www.dowellchat.uxlivinglab.online/api/share/?link_id={link_id}"
 
                 payload = {
                     "link_id": link_id,
