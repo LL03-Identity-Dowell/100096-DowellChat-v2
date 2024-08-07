@@ -1,6 +1,7 @@
 import requests
 from api.connector.database_connector import DataCubeConnection
 from datetime import date
+import json 
 
 data_cube = DataCubeConnection()
 
@@ -58,6 +59,22 @@ def get_database_collections(api_key, db_name):
     else:
         return []
     
+def check_connection():
+    """
+        Checks connection to socket
+    """
+    try:
+        response = requests.get('http://127.0.0.1:7070/connect/')
+        res = json.loads(response.text)
+        if response.status_code == 200:
+            if res['status'] == True:
+                return True
+            else:
+                return False
+        else:
+            return False
+    except:
+        return False    
 def check_daily_collection(api_key, workspace_id, product):
     """
     product=db_name

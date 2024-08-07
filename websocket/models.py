@@ -70,3 +70,13 @@ class LineManager(models.Model):
 
     def __str__(self):
         return f"{self.user_id} {self.workspace.org_id}"
+    
+
+class MetaSetting(models.Model):
+    workspace = models.OneToOneField(Workspace, on_delete=models.CASCADE)
+    waiting_time = models.PositiveIntegerField()
+    operation_time = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.workspace.org_id
