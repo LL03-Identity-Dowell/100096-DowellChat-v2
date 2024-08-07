@@ -13,6 +13,7 @@ class MasterLink(models.Model):
     product_distribution = models.JSONField()
     usernames = models.JSONField()
     is_active = models.BooleanField(default=True)
+    link = models.URLField(max_length=1000, null=True, blank=True)
     master_link = models.URLField(max_length=500)
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)

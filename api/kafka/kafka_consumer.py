@@ -82,6 +82,7 @@ class ChatCreatedListener(threading.Thread):
             'create_topic': self.handle_create_topic,
             'ticket_message': self.handle_ticket_message,
             'create_linemanager':self.handle_create_linemanager,
+            'create_masterlink': self.handle_create_masterlink,
         }
         handler = handlers.get(event_type)
         if handler:
@@ -156,6 +157,27 @@ class ChatCreatedListener(threading.Thread):
         if response['success']:
             logger.info("Message sent to DataCube successfully.")
             print("Line Manager created successfully in DataCube")
+            self.consumer.commit()
+        else:
+            logger.error("Failed to send message to DataCube: %s", response)
+
+    def handle_create_masterlink(self, data):
+        workspace_id = data['workspace_id']
+        api_key = data['api_key']
+        db_name = f"{workspace_id}_cs_ticketing_system_db0"
+        coll_name = f"{workspace_id}_master_link"
+
+        unwanted_keys = ['workspace_id', 'api_key']
+
+        for key in unwanted_keys:
+            data.pop(key, None)
+
+        if check_collection(api_key, workspace_id, coll_name, db_name):
+            response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
+
+        if response['success']:
+            logger.info("Message sent to DataCube successfully.")
+            print("Master link created successfully in DataCube")
             self.consumer.commit()
         else:
             logger.error("Failed to send message to DataCube: %s", response)
