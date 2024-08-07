@@ -5,5 +5,5 @@ urlpatterns = [
     path('', views.serverStatus.as_view()),
     path('public/', views.public),
     path('share/', views.redirect_to_product_link),
-    path('masterlink/', views.Masterlink.as_view(), name='masterlink')
+    path('masterlink/', views.MasterlinkAPI.as_view(), name='masterlink')
 ]

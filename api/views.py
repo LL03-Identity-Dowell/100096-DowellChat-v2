@@ -17,6 +17,7 @@ from .serializers import MasterLinkSerializer
 from .models import MasterLink
 from websocket.models import Workspace
 from .kafka.kafka_producer import ProducerAllEvents
+from django.shortcuts import get_object_or_404
 
 from api.utils.datacube_utils import (
     check_collection,
@@ -77,8 +78,7 @@ def redirect_to_product_link(request):
         # return HttpResponse(f"Missing parameter: {e}")
 
 
-class Masterlink(APIView):
-
+class MasterlinkAPI(APIView):  
     @swagger_auto_schema(
         operation_id="get_masterlink",
         operation_description="API endpoint for returning master links",
@@ -87,40 +87,22 @@ class Masterlink(APIView):
     )
     def get(self, request):
         workspace_id = request.query_params.get("workspace_id")
-        api_key = request.query_params.get("api_key")
 
-        if not workspace_id or not api_key:
+        if not workspace_id:
             return Response(
-                {"message": "workspace_id and api_key are required.", "success": False},
+                {"message": "workspace_id is required.", "success": False},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
+        
         try:
-            limit = int(request.query_params.get("limit", 10))
-            offset = int(request.query_params.get("offset", 0))
-        except ValueError:
-            return Response(
-                {"message": "limit and offset must be integers.", "success": False},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        db_name = f"{workspace_id}_cs_ticketing_system_db0"
-        coll_name = f"{workspace_id}_master_link"
-
-        try:
-            response = data_cube.fetch_data(
-                api_key=api_key,
-                db_name=db_name,
-                coll_name=coll_name,
-                filters={},
-                limit=limit,
-                offset=offset,
-            )
+            workspace = get_object_or_404(Workspace, org_id=workspace_id)
+            masterlink = MasterLink.objects.filter(workspace=workspace)
+            serializer = MasterLinkSerializer(masterlink, many=True)
             return Response(
                 {
                     "success": True,
                     "message": "All master links",
-                    "response": response.get("data", []),
+                    "response": serializer.data
                 }
             )
 
