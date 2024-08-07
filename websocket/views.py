@@ -1,6 +1,6 @@
 import re
 import random
-from api.kafka.kafka_producer import ProducerTicketChat
+from api.kafka.kafka_producer import ProducerTicketChat, ProducerAllEvents
 from django.conf import settings
 from datetime import date, datetime
 import base64
@@ -23,6 +23,7 @@ from api.utils.helper import (
     generate_date_range
 
 )
+from django.shortcuts import get_object_or_404
 from api.utils.datacube_utils import (
     check_daily_collection, 
     check_collection, 
@@ -36,7 +37,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from api.utils.email.email_template import EMAIL_FROM_WEBSITE
 from api.utils.email.email_sender import send_email, is_valid_email
 from api.connector.database_connector import DataCubeConnection
-from .serializers import MessageSerializer, TicketMessageSerializer
+from .serializers import MessageSerializer, TicketMessageSerializer, TopicSerializer, LineManagerSerializer
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from django.utils.decorators import method_decorator
@@ -44,7 +45,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Message, TicketMessage
+from .models import Message, TicketMessage, Workspace, Topic, LineManager
 import requests
 from django.shortcuts import redirect, render
 async_mode = 'gevent'
@@ -1913,24 +1914,22 @@ sio.register_namespace(PublicNamespace('/public'))
 """TOPIC RELATED EVENTS"""
 @sio.event
 def create_topic(sid, message):
+    producerAllEvents = ProducerAllEvents()
     try:
         workspace_id = message['workspace_id']
         api_key = message['api_key']
 
         name = message ['name'].lower().replace(" ", "_")
         created_at = message['created_at']
-        
+
+        topic_db = assign_database_to_product(workspace_id, api_key)
         data = {
                 "name": name,
-                "db_name": assign_database_to_product(workspace_id, api_key),
+                "db_name": topic_db,
                 "created_at": created_at, 
         }
         
         db_name = f"{workspace_id}_cs_ticketing_system_db0"
-        coll_name = f"{workspace_id}_topics"
-        topic_db = assign_database_to_product(workspace_id, api_key)
-
-        
 
         #Check if the DB0 Exists
         if not check_db(workspace_id, api_key, db_name):
@@ -1940,20 +1939,32 @@ def create_topic(sid, message):
         if not check_db(workspace_id, api_key, topic_db):
             return sio.emit('setting_response', {'data':f"DB {topic_db} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)    
 
+        workspace, workspace_created = Workspace.objects.get_or_create(
+            org_id=workspace_id,
+            api_key=api_key
+        )
+        topic, created = Topic.objects.get_or_create(
+            name=data['name'],
+            db_name=data['db_name'],
+            workspace=workspace
+        )
+
+        if created:
+            serializer = TopicSerializer(topic, many=False)
+            sio.emit('setting_response', {'data':serializer.data, 'status': 'success', 'operation':'create_topic'}, room=sid)
+        else:
+            return sio.emit('setting_response', {'data':f"Topic {name} already exists", 'status': 'failure', 'operation':'create_topic'}, room=sid)
         
-        if check_collection(api_key, workspace_id, coll_name, db_name):
+        #Sending data to kafka
+        other_data = {
+            "ddb_name":db_name,
+            "api_key":api_key,
+            "workspace_id": workspace_id
+        }
+        data.update(other_data)
+        producerAllEvents.publish(data, event_type="create_topic")
+        return
             
-            check_topic = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"name":name},limit=200, offset=0)
-            if check_topic['success']:
-                if check_topic['data']:
-                    return sio.emit('setting_response', {'data':f"Topic {name} already exists", 'status': 'failure', 'operation':'create_topic'}, room=sid)
-
-            response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
-
-            if response['success'] == True:
-                return sio.emit('setting_response', {'data':response['data'], 'status': 'success', 'operation':'create_topic'}, room=sid)
-            else:
-                return sio.emit('setting_response', {'data':response['message'], 'status': 'failure', 'operation':'create_topic'}, room=sid)
     except Exception as e:
         # Handle other exceptions
         error_message = str(e)
@@ -1964,36 +1975,15 @@ def create_topic(sid, message):
 def get_all_topics(sid, message):
     try:
         workspace_id = message['workspace_id']
-        api_key = message['api_key']
         
+        workspace = get_object_or_404(Workspace, org_id=workspace_id)
+        topics = Topic.objects.filter(workspace = workspace)
 
-        db_name = f"{workspace_id}_cs_ticketing_system_db0"
-        coll_name = f"{workspace_id}_topics"
-
-        if not check_db(workspace_id, api_key, db_name):
-            return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'get_all_topics'}, room=sid)
-
-        if check_collection(api_key, workspace_id, coll_name, db_name):
-
-            response = data_cube.fetch_data(
-                api_key=api_key,
-                db_name=db_name,
-                coll_name=coll_name,
-                filters={},
-                limit=199,
-                offset=0
-            )
-        
-            if response['success']:
-                sio.enter_room(sid, workspace_id)
-                if not response['data']:
-                    return sio.emit('setting_response', {'data': 'No Topic found for this Workspace', 'status': 'failure', 'operation': 'get_all_topics'}, room=sid)
-
-                else:
-                    return sio.emit('setting_response', {'data': response['data'], 'status': 'success', 'operation': 'get_all_topics'}, room=sid)
-            else:
-                # Error in fetching data
-                return sio.emit('setting_response', {'data': response['message'], 'status': 'failure', 'operation': 'get_all_topics'}, room=sid)
+        if topics:
+            serializer = TopicSerializer(topics, many=True)
+            return sio.emit('setting_response', {'data': serializer.data, 'status': 'success', 'operation': 'get_all_topics'}, room=sid)
+        else:
+            return sio.emit('setting_response', {'data': 'No Topic found for this Workspace', 'status': 'failure', 'operation': 'get_all_topics'}, room=sid)
 
     except Exception as e:
         # Handle other exceptions
@@ -2004,47 +1994,51 @@ def get_all_topics(sid, message):
 """ LINE MANAGER RELATED EVENTS"""
 @sio.event
 def create_line_manager(sid, message):
+    producerAllEvents = ProducerAllEvents()
     try:
         user_id = message['user_id']
         created_at = message['created_at']
         workspace_id = message['workspace_id']
         api_key = message['api_key']
-
-        
-        
-        data = {
-                "user_id": user_id,
-                "positions_in_a_line": calculate_position_in_line(api_key, workspace_id),
-                "average_serving_time":0,
-                "ticket_count": 0,
-                "is_active": True,
-                "created_at": created_at, 
-        }
-        
+        positions_in_a_line = calculate_position_in_line(workspace_id)
+                
         db_name = f"{workspace_id}_cs_ticketing_system_db0"
-        coll_name = f"{workspace_id}_line_manager"
-
-        
 
         #Check if the DB0 Exists
         if not check_db(workspace_id, api_key, db_name):
             return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
 
-       
+        workspace, workspace_created = Workspace.objects.get_or_create(
+            org_id=workspace_id,
+            api_key=api_key
+        )
+
+        line_manager, created= LineManager.objects.get_or_create(
+            user_id = user_id,
+            positions_in_a_line = positions_in_a_line,
+            workspace=workspace
+
+        )
+
+        if created:
+            serializer = LineManagerSerializer(line_manager, many=False)
+            sio.emit('setting_response', {'data':serializer.data, 'status': 'success', 'operation':'create_line_manager'}, room=sid)
+        else:
+            return sio.emit('setting_response', {'data':f"user {user_id} already exists", 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
         
-        if check_collection(api_key, workspace_id, coll_name, db_name):
-            
-            check_user = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={"user_id":user_id},limit=200, offset=0)
-            if check_user['success']:
-                if check_user['data']:
-                    return sio.emit('setting_response', {'data':f"User {user_id} already exists", 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
-
-            response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)
-
-            if response['success'] == True:
-                return sio.emit('setting_response', {'data':response['data'], 'status': 'success', 'operation':'create_line_manager'}, room=sid)
-            else:
-                return sio.emit('setting_response', {'data':response['message'], 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
+        data = {
+                "user_id": user_id,
+                "positions_in_a_line": positions_in_a_line,
+                "average_serving_time":0,
+                "ticket_count": 0,
+                "is_active": True,
+                "created_at": created_at,
+                "db_name": db_name,
+                "api_key": api_key,
+                "workspace_id":workspace_id,
+        }
+        producerAllEvents.publish(data, event_type="create_linemanager")
+        return
     except Exception as e:
         # Handle other exceptions
         error_message = str(e)
@@ -2056,37 +2050,19 @@ def get_all_line_managers(sid, message):
     try:
         workspace_id = message['workspace_id']
         api_key = message['api_key']
-        
-
         db_name = f"{workspace_id}_cs_ticketing_system_db0"
-        coll_name = f"{workspace_id}_line_manager"
 
         if not check_db(workspace_id, api_key, db_name):
             return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'get_all_line_managers'}, room=sid)
 
-        if check_collection(api_key, workspace_id, coll_name, db_name):
-
-            response = data_cube.fetch_data(
-                api_key=api_key,
-                db_name=db_name,
-                coll_name=coll_name,
-                filters={},
-                limit=199,
-                offset=0
-            )
-        
-            if response['success']:
-                if not response['data']:
-                    return sio.emit('setting_response', {'data': 'No Line Manager found for this Workspace', 'status': 'failure', 'operation': 'get_all_line_managers'}, room=sid)
-
-                else:
-                    return sio.emit('setting_response', {'data': response['data'], 'status': 'success', 'operation': 'get_all_line_managers'}, room=sid)
-            else:
-                # Error in fetching data
-                return sio.emit('setting_response', {'data': response['message'], 'status': 'failure', 'operation': 'get_all_line_managers'}, room=sid)
+        line_managers = LineManager.objects.filter(workspace__org_id=workspace_id)
+        if line_managers:
+            serializer = LineManagerSerializer(line_managers, many=True)
+            return sio.emit('setting_response', {'data': serializer.data, 'status': 'success', 'operation': 'get_all_line_managers'}, room=sid)
+        else:
+            return sio.emit('setting_response', {'data': 'No Line Manager found for this Workspace', 'status': 'failure', 'operation': 'get_all_line_managers'}, room=sid)
 
     except Exception as e:
-        # Handle other exceptions
         error_message = str(e)
         return sio.emit('setting_response', {'data': error_message, 'status': 'failure', 'operation': 'get_all_line_managers'}, room=sid)
 
@@ -2392,7 +2368,7 @@ def get_meta_setting(sid, message):
 """ TICKET CHAT STARTS HERE"""
 @sio.event
 def ticket_message_event(sid, message):
-    producerTicketChat = ProducerTicketChat()
+    producerAllEvents = ProducerAllEvents()
     try:
 
         ticket_id = message['ticket_id']
@@ -2415,7 +2391,6 @@ def ticket_message_event(sid, message):
                     "product": product.lower(),
                     "workspace_id":workspace_id,
                     "api_key": api_key,
-                    "sid":sid
 
         }
 
@@ -2443,7 +2418,7 @@ def ticket_message_event(sid, message):
         )
 
         #Pushing the messages to kafka consumer
-        producerTicketChat.publish(data)
+        producerAllEvents.publish(data, event_type="ticket_message")
 
     except Exception as e:
         error_message = str(e)
