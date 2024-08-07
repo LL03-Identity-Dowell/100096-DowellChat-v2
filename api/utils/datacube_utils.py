@@ -64,7 +64,7 @@ def check_connection():
         Checks connection to socket
     """
     try:
-        response = requests.get('http://127.0.0.1:7070/connect/')
+        response = requests.get('https://1000093.pythonanywhere.com/connect/')
         res = json.loads(response.text)
         if response.status_code == 200:
             if res['status'] == True:

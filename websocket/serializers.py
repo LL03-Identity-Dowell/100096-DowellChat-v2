@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Room, Message, TicketMessage, Topic, LineManager
+from .models import Room, Message, TicketMessage, Topic, LineManager, MetaSetting
 
 class RoomSerializer(serializers.ModelSerializer):
     class Meta:
@@ -28,4 +28,9 @@ class TopicSerializer(serializers.ModelSerializer):
 class LineManagerSerializer(serializers.ModelSerializer):
     class Meta:
         model = LineManager
+        fields = '__all__'
+
+class MetaSettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MetaSetting
         fields = '__all__'
