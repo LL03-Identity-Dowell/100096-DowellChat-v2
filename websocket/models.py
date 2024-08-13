@@ -37,7 +37,7 @@ class TicketMessage(models.Model):
     created_at = models.CharField(max_length=250)
 
     def __str__(self):
-        return f'{self.room_id} - {self.author}'
+        return f'{self.id} - {self.author}'
     
 
 class Workspace(models.Model):
