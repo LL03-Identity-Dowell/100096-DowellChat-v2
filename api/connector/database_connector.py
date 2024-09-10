@@ -14,7 +14,8 @@ class DBCrudOperation(Enum):
 
 
 class DataCubeConnection:
-    BASE_URL = "https://datacube.uxlivinglab.online/db_api/"
+    # BASE_URL = "https://datacube.uxlivinglab.online/db_api/"
+    BASE_URL = "https://www.dowelldatacube.uxlivinglab.online/db_api/"
     CRUD_URL = BASE_URL + "crud/"
     GET_DATA_URL = BASE_URL + "get_data/"
 
