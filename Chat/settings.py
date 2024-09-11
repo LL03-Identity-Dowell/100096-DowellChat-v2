@@ -91,6 +91,17 @@ WSGI_APPLICATION = 'Chat.wsgi.application'
 #         'PORT': os.getenv("POSTGRES_DB"),
 #     }
 # }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': "dowellchat_db1",
+        'USER': "user_1",
+        'PASSWORD': "dowellchat@2024",
+        'HOST': "postgres",
+        'PORT': "5432",
+    }
+}
+
 
 # DATABASES = {
 #     'default': {
@@ -100,17 +111,17 @@ WSGI_APPLICATION = 'Chat.wsgi.application'
 # }
 
 
-#FOR DEVELOPMENT
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres.begjxxkeecbcggqptcea',
-        'PASSWORD': 'fPmYXjSfHWvgOPPaevxGuKbkdq1zUZjJ7z8ZUEstsFWGbwgXkTUrI1BRX3us933a',
-        'HOST': 'aws-0-eu-central-1.pooler.supabase.com',
-        'PORT': '6543',
-    }
-}
+# FOR DEVELOPMENT
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'postgres',
+#         'USER': 'postgres.begjxxkeecbcggqptcea',
+#         'PASSWORD': 'fPmYXjSfHWvgOPPaevxGuKbkdq1zUZjJ7z8ZUEstsFWGbwgXkTUrI1BRX3us933a',
+#         'HOST': 'aws-0-eu-central-1.pooler.supabase.com',
+#         'PORT': '6543',
+#     }
+# }
 
 
 # Password validation
@@ -152,8 +163,8 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-#MEDIA
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  
+# MEDIA
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
 API_KEY = os.getenv("API_KEY")
