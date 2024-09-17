@@ -119,4 +119,6 @@ volumes:
 #   webnet:
 networks:
   default:
-    name: webnet
+    external:
+      name: webnet
+
