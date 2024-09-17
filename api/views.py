@@ -47,7 +47,7 @@ public_namespace = "/public"
 @api_view(["GET"])
 @csrf_exempt
 def public(request):
-    return HttpResponse("Connected to Public Dowell Chat Backend")
+    return HttpResponse("Successfully Connected to Public Dowell Chat Backend")
 
 
 def redirect_to_product_link(request):
