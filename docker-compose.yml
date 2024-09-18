@@ -88,7 +88,7 @@ volumes:
   dowell_postgres_data_backups: {}
 
 nginx:
-  build: ./nginx
+  build: ./compose/nginx
   image: nginx:latest
   container_name: "nginx_con"
   depends_on:
