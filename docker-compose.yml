@@ -39,6 +39,8 @@ services:
       DJANGO_SUPERUSER_PASSWORD: pass123456
       DJANGO_SETTINGS_MODULE: Chat.settings
       ADMIN_PASSWORD: trial1#2024
+    networks:
+      - webnet
 
   zookeeper:
     image: zookeeper:latest
