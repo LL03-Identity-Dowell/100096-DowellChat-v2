@@ -97,7 +97,7 @@ DATABASES = {
         'NAME': "dowellchat_db1",
         'USER': "user_1",
         'PASSWORD': "dowellchat@2024",
-        'HOST': "postgres",
+        'HOST': "db",
         'PORT': "5432",
     }
 }

@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  postgres:
+  db:
     build:
       context: .
       dockerfile: ./compose/postgres/Dockerfile
@@ -24,10 +24,21 @@ services:
       dockerfile: ./compose/django/Dockerfile
     container_name: dowellchat-backend
     restart: always
-    command: >
-      sh -c "python manage.py migrate &&
-             echo \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@example.com', 'pass123456') if not User.objects.filter(username='admin').exists() else None\" | python manage.py shell &&
-             gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 Chat.wsgi:application --timeout 9999"
+    depends_on:
+      - db
+    command: bash -c "./wait-for-it.sh --timeout=0 db:5432  && ./entrypoint.sh"
+    # command: >
+    #   sh -c "python -c 'import time; from django.db import connections, OperationalError;     db_conn = None;      while not db_conn:
+    #     try: db_conn = connections[\"default\"]; db_conn.cursor(); 
+    #     except OperationalError: print(\"Database unavailable, waiting 1 second...\"); time.sleep(1)' &&
+    #   python manage.py migrate && python -c 'from django.contrib.auth import get_user_model; User = get_user_model(); if not User.objects.filter(username=\"admin\").exists():
+    #     User.objects.create_superuser(\"admin\", \"admin@example.com\", \"pass123456\")' &&
+    #   gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 Chat.wsgi:application --timeout 9999"
+
+    # command: >
+    #   sh -c "python manage.py migrate &&
+    #          echo \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@example.com', 'pass123456') if not User.objects.filter(username='admin').exists() else None\" | python manage.py shell &&
+    #          gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 Chat.wsgi:application --timeout 9999"
     # command: >
     #   sh -c "python manage.py migrate &&
     #          gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 Chat.wsgi:application --timeout 9999"
@@ -45,8 +56,7 @@ services:
       DJANGO_SUPERUSER_USERNAME: admin
       DJANGO_SUPERUSER_EMAIL: admin@example.com
       DJANGO_SUPERUSER_PASSWORD: pass123456
-    depends_on:
-      - postgres
+      DJANGO_SETTINGS_MODULE: Chat.settings
 
   zookeeper:
     image: zookeeper:latest
@@ -84,7 +94,7 @@ services:
       API_KEY: 1b834e07-c68b-4bf6-96dd-ab7cdc62f07f
       ENVIRON: kafka
     depends_on:
-      - postgres
+      - db
       - chat-backend
       - kafka
       - zookeeper
