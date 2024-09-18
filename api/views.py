@@ -34,7 +34,10 @@ class serverStatus(APIView):
         operation_description="Server Health Check",
     )
     def get(self, request):
-        return Response({"info": "Server is working fine!!"}, status=status.HTTP_200_OK)
+        return Response({
+            "success": True,
+            "message": "Server is running"
+        }, status=status.HTTP_200_OK)
 
 
 """PUBLIC RELEASE"""
