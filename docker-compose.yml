@@ -26,7 +26,7 @@ services:
     restart: always
     depends_on:
       - db
-    command: bash -c "./wait-for-it.sh --timeout=0 db:5432  && ./entrypoint.sh"
+    command: bash -c "./wait-for-it.sh --timeout=900 db:5432  && ./entrypoint.sh"
     ports:
       - "8001:8001"
     expose:
@@ -111,7 +111,11 @@ volumes:
 
 # networks:
 #   webnet:
+# networks:
+#   default:
+#     external:
+#       name: webnet
 networks:
   default:
-    external:
-      name: webnet
+    name: webnet
+    external: true
