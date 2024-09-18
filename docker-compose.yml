@@ -17,6 +17,7 @@ services:
       - POSTGRES_PASSWORD=dowellchat@2024
     ports:
       - "5432:5432"
+
   chat-backend:
     build:
       context: .
@@ -62,6 +63,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - zookeeper
+
   kafka-consumer:
     build:
       context: .
@@ -103,6 +105,5 @@ volumes:
   dowell_postgres_data_backups: {}
 
 networks:
-  default:
-    name: webnet
+  webnet:
     external: true
