@@ -24,4 +24,4 @@ COPY . /usr/src/app
 EXPOSE 8001
 
 # Update the CMD to run uWSGI for your application
-# CMD ["gunicorn", "-k", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", "-w", "1", "Chat.wsgi:application", "--timeout", "1060", "-b", ":8000"]
+CMD ["gunicorn", "-k", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", "-w", "1", "Chat.wsgi:application", "--timeout", "1060", "-b", ":8000"]
