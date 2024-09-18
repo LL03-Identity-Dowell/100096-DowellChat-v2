@@ -27,23 +27,6 @@ services:
     depends_on:
       - db
     command: bash -c "./wait-for-it.sh --timeout=0 db:5432  && ./entrypoint.sh"
-    # command: >
-    #   sh -c "python -c 'import time; from django.db import connections, OperationalError;     db_conn = None;      while not db_conn:
-    #     try: db_conn = connections[\"default\"]; db_conn.cursor(); 
-    #     except OperationalError: print(\"Database unavailable, waiting 1 second...\"); time.sleep(1)' &&
-    #   python manage.py migrate && python -c 'from django.contrib.auth import get_user_model; User = get_user_model(); if not User.objects.filter(username=\"admin\").exists():
-    #     User.objects.create_superuser(\"admin\", \"admin@example.com\", \"pass123456\")' &&
-    #   gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 Chat.wsgi:application --timeout 9999"
-
-    # command: >
-    #   sh -c "python manage.py migrate &&
-    #          echo \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@example.com', 'pass123456') if not User.objects.filter(username='admin').exists() else None\" | python manage.py shell &&
-    #          gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 Chat.wsgi:application --timeout 9999"
-    # command: >
-    #   sh -c "python manage.py migrate &&
-    #          gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 Chat.wsgi:application --timeout 9999"
-    # command: gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 Chat.wsgi:application --timeout 9999
-    # command: [ "postgres:5432", "--", "gunicorn", "-k", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", "-w", "1", "Chat.wsgi:application", "--timeout", "9999" ]
     ports:
       - "8001:8001"
     expose:
