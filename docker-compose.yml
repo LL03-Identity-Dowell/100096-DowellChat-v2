@@ -82,7 +82,7 @@ services:
       - zookeeper
 
   nginx:
-    build: 
+    build:
       context: .
       dockerfile: ./compose/nginx/Dockerfile
     container_name: nginx_con
