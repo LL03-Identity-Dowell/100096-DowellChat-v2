@@ -17,6 +17,8 @@ services:
       POSTGRES_PASSWORD: dowellchat@2024
     ports:
       - "5432:5432"
+    networks:
+      - webnet
 
   chat-backend:
     build:
