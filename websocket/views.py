@@ -52,7 +52,7 @@ async_mode = 'gevent'
 # async_mode = "threading"
 
 
-sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode)
+sio = socketio.Server(cors_allowed_origins="*", async_mode=async_mode, allow_eio3=True)
 sio.instrument(auth={
     'username': 'admin',
     'password': os.getenv("ADMIN_PASSWORD"),

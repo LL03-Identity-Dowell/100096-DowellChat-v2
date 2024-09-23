@@ -25,9 +25,13 @@ logger = logging.getLogger(__name__)
 # We want to run thread in an infinite loop
 running = True
 kafka_environ = os.getenv("ENVIRON")
+
 conf = {'bootstrap.servers': f"{kafka_environ}:9092",
         'auto.offset.reset': 'smallest',
-        'group.id': "user_group"}
+        'group.id': "user_group",
+        'request.timeout.ms': 30000,          # Set request timeout to 30 seconds
+    'session.timeout.ms': 15000           # Set session timeout to 15 seconds
+        }
 # Topic
 topic = 'ticket_chat_topic_test'
 
