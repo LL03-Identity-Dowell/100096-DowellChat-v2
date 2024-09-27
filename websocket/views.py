@@ -1931,13 +1931,13 @@ def create_topic(sid, message):
         
         db_name = f"{workspace_id}_cs_ticketing_system_db0"
 
-        #Check if the DB0 Exists
-        if not check_db(workspace_id, api_key, db_name):
-            return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)
+        # #Check if the DB0 Exists
+        # if not check_db(workspace_id, api_key, db_name):
+        #     return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)
 
-        #Check if the DB for the topic exists
-        if not check_db(workspace_id, api_key, topic_db):
-            return sio.emit('setting_response', {'data':f"DB {topic_db} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)    
+        # #Check if the DB for the topic exists
+        # if not check_db(workspace_id, api_key, topic_db):
+        #     return sio.emit('setting_response', {'data':f"DB {topic_db} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)    
 
         workspace, workspace_created = Workspace.objects.get_or_create(
             org_id=workspace_id,
