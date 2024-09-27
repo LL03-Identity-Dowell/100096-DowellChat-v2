@@ -44,7 +44,7 @@ def get_database_collections(api_key, db_name):
     :param db_name: The name of the database.
     :return: A list containing only the collections with "_collection" in their names.
     """
-    url = "https://datacube.uxlivinglab.online/db_api/collections/"
+    # url = "https://datacube.uxlivinglab.online/db_api/collections/"
     url = "https://www.dowelldatacube.uxlivinglab.online/db_api/collections/"
     payload = {
         "api_key": api_key,
