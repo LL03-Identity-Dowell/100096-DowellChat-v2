@@ -45,6 +45,7 @@ def get_database_collections(api_key, db_name):
     :return: A list containing only the collections with "_collection" in their names.
     """
     url = "https://datacube.uxlivinglab.online/db_api/collections/"
+    url = "https://www.dowelldatacube.uxlivinglab.online/db_api/collections/"
     payload = {
         "api_key": api_key,
         "db_name": db_name,
@@ -91,7 +92,8 @@ def check_daily_collection(api_key, workspace_id, product):
 
     if not collection_response['success']:
         if "Collection" in collection_response['message']:
-            url = "https://datacube.uxlivinglab.online/db_api/add_collection/"
+            # url = "https://datacube.uxlivinglab.online/db_api/add_collection/"
+            url = "https://www.dowelldatacube.uxlivinglab.online/db_api/add_collection/"
             data_to_add = {
                 "api_key": api_key,
                 "db_name": db_name,
@@ -119,7 +121,8 @@ def check_collection(api_key, workspace_id, coll, db_name=None):
         api_key=api_key, db_name=db_name, coll_name=coll_name, filters={}, limit=1, offset=0)
     if not collection_response['success']:
         if "Collection" in collection_response['message']:
-            url = "https://datacube.uxlivinglab.online/db_api/add_collection/"
+            # url = "https://datacube.uxlivinglab.online/db_api/add_collection/"
+            url = "https://www.dowelldatacube.uxlivinglab.online/db_api/add_collection/"
             data_to_add = {
                 "api_key": api_key,
                 "db_name": db_name,
