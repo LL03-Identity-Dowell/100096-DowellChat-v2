@@ -2005,8 +2005,8 @@ def create_line_manager(sid, message):
         db_name = f"{workspace_id}_cs_ticketing_system_db0"
 
         #Check if the DB0 Exists
-        if not check_db(workspace_id, api_key, db_name):
-            return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
+        # if not check_db(workspace_id, api_key, db_name):
+        #     return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
 
         workspace, workspace_created = Workspace.objects.get_or_create(
             org_id=workspace_id,
@@ -2052,8 +2052,8 @@ def get_all_line_managers(sid, message):
         api_key = message['api_key']
         db_name = f"{workspace_id}_cs_ticketing_system_db0"
 
-        if not check_db(workspace_id, api_key, db_name):
-            return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'get_all_line_managers'}, room=sid)
+        # if not check_db(workspace_id, api_key, db_name):
+        #     return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'get_all_line_managers'}, room=sid)
 
         line_managers = LineManager.objects.filter(workspace__org_id=workspace_id)
         if line_managers:
@@ -2511,7 +2511,7 @@ def create_ticket(sid, message):
             "product": product,
             "waiting_time":calculate_initial_waiting_time(int(line_manager_ticket_count), waiting_time)
         }
-
+        # producerAllEvents.publish(data, event_type="create_topic")
         formatted_date = str(date.today()).replace("-", "_")
         db_name = map_product_to_db(workspace_id, api_key, product)
         coll_name = f"{workspace_id}_{formatted_date}_{product}_collection"
@@ -2543,10 +2543,10 @@ def create_ticket(sid, message):
         
         # Send email
         formatted_email = EMAIL_FROM_WEBSITE.format(inserted_id, inserted_id)
-        if is_valid_email(email):
-            send_email(email, email, "New Ticket Confirmation", formatted_email)
-        else:
-            print("Email is invalid")
+        # if is_valid_email(email):
+        #     send_email(email, email, "New Ticket Confirmation", formatted_email)
+        # else:
+        #     print("Email is invalid")
 
          # Fetch link data
         link_response = data_cube.fetch_data(api_key=api_key, db_name=link_db_name, coll_name=link_coll_name, filters={"link_id": link_id}, limit=1, offset=0)
@@ -2967,3 +2967,4 @@ def queue_update(sid, message):
     except Exception as e:
         error_message = str(e)
         return sio.emit('queue_response', {'data': error_message, 'status': 'failure', 'operation': 'queue_update'}, room=sid)
+

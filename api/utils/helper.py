@@ -9,6 +9,7 @@ from .datacube_utils import check_collection
 from datetime import date, datetime, timedelta
 from django.db.models import Max
 from websocket.models import LineManager
+from django.db.models import Min
 
 data_cube = DataCubeConnection()
 
@@ -205,6 +206,24 @@ def assign_ticket_to_line_manager(api_key, db_name, coll_name, filters, limit=19
     assigned_line_manager = candidates[0]
 
     return assigned_line_manager['user_id'], assigned_line_manager['ticket_count']
+
+def assign_ticket_to_line_manager_locally( workspace_id,filters, limit=199, offset=0):
+    #Get all line managets by workspace_id and sort them by ticker_count and position in line
+    line_managers = LineManager.objects.filter(workspace_id=workspace_id).order_by('ticket_count', 'positions_in_a_line')
+    #Check if any exist
+    if not line_managers:
+        return None
+    # Step 1: Get the minimum ticket count
+    min_ticket_count = line_managers.aggregate(Min('ticket_count'))['ticket_count__min']
+
+    # Step 2: Filter the line managers with the minimum ticket count
+    candidates = line_managers.filter(ticket_count=min_ticket_count).order_by('positions_in_a_line')
+
+    # Step 3: Get the assigned line manager
+    assigned_line_manager = candidates.first()
+
+    # Step 4: Return the user_id and ticket_count
+    return assigned_line_manager.user_id, assigned_line_manager.ticket_count
 
 
 # def calculate_position_in_line(api_key, workspace_id):
