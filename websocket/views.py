@@ -1932,8 +1932,8 @@ def create_topic(sid, message):
         db_name = f"{workspace_id}_cs_ticketing_system_db0"
 
         # #Check if the DB0 Exists
-        # if not check_db(workspace_id, api_key, db_name):
-        #     return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)
+        if not check_db(workspace_id, api_key, db_name):
+            return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'create_topic'}, room=sid)
 
         # #Check if the DB for the topic exists
         # if not check_db(workspace_id, api_key, topic_db):
@@ -2005,8 +2005,8 @@ def create_line_manager(sid, message):
         db_name = f"{workspace_id}_cs_ticketing_system_db0"
 
         #Check if the DB0 Exists
-        # if not check_db(workspace_id, api_key, db_name):
-        #     return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
+        if not check_db(workspace_id, api_key, db_name):
+            return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'create_line_manager'}, room=sid)
 
         workspace, workspace_created = Workspace.objects.get_or_create(
             org_id=workspace_id,
@@ -2052,8 +2052,8 @@ def get_all_line_managers(sid, message):
         api_key = message['api_key']
         db_name = f"{workspace_id}_cs_ticketing_system_db0"
 
-        # if not check_db(workspace_id, api_key, db_name):
-        #     return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'get_all_line_managers'}, room=sid)
+        if not check_db(workspace_id, api_key, db_name):
+            return sio.emit('setting_response', {'data':f"DB {db_name} Not found", 'status': 'failure', 'operation':'get_all_line_managers'}, room=sid)
 
         line_managers = LineManager.objects.filter(workspace__org_id=workspace_id)
         if line_managers:
